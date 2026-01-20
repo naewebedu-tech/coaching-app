@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import MarketingWebsite, { type PageKey } from './pages/marketing/MarketingWebsite';
+import MarketingWebsite from './pages/marketing/MarketingWebsite';
 import Dashboard from './pages/dashboard/Dashboard';
 
 // Define the User interface (matching the one used in Dashboard)
