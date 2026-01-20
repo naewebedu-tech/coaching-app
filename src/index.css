@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional: Base styles for full height */
+html, body, #root {
+  height: 100%;
+}
