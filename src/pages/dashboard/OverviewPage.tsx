@@ -1,4 +1,4 @@
-import React from 'react';
+// import React from 'react';
 import { Users, DollarSign, CheckCircle, FileText, AlertCircle } from 'lucide-react';
 import type { User } from '../../App';
 import type { DashboardData } from '../../hooks/useDashboardData';

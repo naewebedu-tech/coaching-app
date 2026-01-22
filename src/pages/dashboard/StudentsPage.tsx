@@ -1,8 +1,8 @@
-import React, { useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Search, UserPlus, Trash2, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { studentService } from '../../services/api';
-import type { DashboardData, Student } from '../../hooks/useDashboardData';
+import type { DashboardData } from '../../hooks/useDashboardData';
 import toast from 'react-hot-toast';
 
 interface StudentsPageProps {
