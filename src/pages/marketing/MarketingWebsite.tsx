@@ -7,13 +7,13 @@ import FeaturesPage from './FeaturesPage';
 import PricingPage from './PricingPage';
 import TestimonialsPage from './TestimonialsPage';
 import ContactPage from './ContactPage';
-import type { User } from '../../App';
 
 // Define the available page keys
 export type PageKey = 'home' | 'features' | 'pricing' | 'testimonials' | 'contact';
 
 interface MarketingWebsiteProps {
-  onLogin: (user: User) => void;
+  // Updated to accept the full API response (user + tokens)
+  onLogin: (data: any) => void;
 }
 
 const MarketingWebsite = ({ onLogin }: MarketingWebsiteProps) => {
@@ -23,6 +23,7 @@ const MarketingWebsite = ({ onLogin }: MarketingWebsiteProps) => {
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
 
+  // Handle scroll effect for navbar transparency
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
