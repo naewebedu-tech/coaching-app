@@ -1,6 +1,8 @@
 import React, { useState, useEffect, type FormEvent } from 'react';
 import { X, Lock, Loader2, User as UserIcon, Building2, Phone, Eye, EyeOff } from 'lucide-react';
-import type { User } from '../../App';
+// import type { User } from '../../App';
+import { authService } from '../../services/api';
+import toast from 'react-hot-toast';
 
 type AuthMode = 'login' | 'signup';
 
@@ -8,7 +10,7 @@ interface AuthModalProps {
   mode: AuthMode;
   onClose: () => void;
   switchMode: (mode: AuthMode) => void;
-  onLogin: (user: User) => void;
+  onLogin: (responseData: any) => void; // Accepts full API response (user + tokens)
 }
 
 const AuthModal = ({ mode, onClose, switchMode, onLogin }: AuthModalProps) => {
@@ -18,12 +20,10 @@ const AuthModal = ({ mode, onClose, switchMode, onLogin }: AuthModalProps) => {
     name: '',
     instituteName: ''
   });
+  
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const DEMO_PHONE = '1234567890';
-  const DEMO_PASSWORD = 'demo123';
 
   // Reset state when mode changes
   useEffect(() => {
@@ -37,46 +37,74 @@ const AuthModal = ({ mode, onClose, switchMode, onLogin }: AuthModalProps) => {
     setError(''); // Clear error on typing
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    // Simulate Network Delay
-    setTimeout(() => {
+    try {
+      let response;
+
       if (mode === 'login') {
-        // --- LOGIN LOGIC ---
-        if (formData.phone === DEMO_PHONE && formData.password === DEMO_PASSWORD) {
-          onLogin({
-            id: '1',
-            name: 'Demo Admin',
-            phone: formData.phone,
-            instituteName: 'Demo Institute',
-            email: 'admin@demo.com'
-          });
-          onClose();
-        } else {
-          setError('Invalid credentials. Try the demo account below.');
-          setIsLoading(false);
-        }
-      } else {
-        // --- SIGNUP LOGIC ---
-        if (!formData.name || !formData.instituteName) {
-          setError('Please fill in all fields.');
-          setIsLoading(false);
-          return;
-        }
-        
-        onLogin({
-          id: Date.now().toString(),
-          name: formData.name,
+        // --- LOGIN ---
+        response = await authService.login({
           phone: formData.phone,
-          instituteName: formData.instituteName,
-          email: `${formData.phone}@example.com`
+          password: formData.password
         });
+      } else {
+        // --- SIGNUP ---
+        // Validate required fields locally first
+        if (!formData.name || !formData.instituteName) {
+          throw new Error("Please fill in all fields");
+        }
+
+        response = await authService.register({
+          phone: formData.phone,
+          password: formData.password,
+          name: formData.name,
+          // Map camelCase to snake_case for Django
+          institute_name: formData.instituteName 
+        });
+      }
+
+      if (response.success) {
+        toast.success(mode === 'login' ? 'Login Successful' : 'Account Created Successfully');
+        onLogin(response); // Pass the full response data to App.tsx
         onClose();
       }
-    }, 1500);
+
+    } catch (err: any) {
+      console.error(err);
+      
+      // Handle API Errors
+      let msg = 'Authentication failed. Please try again.';
+      
+      if (err.message) {
+        msg = err.message; // Local validation error
+      }
+      
+      if (err.response?.data) {
+        // Backend returned a specific error message
+        if (err.response.data.message) {
+          msg = err.response.data.message;
+        }
+        // Backend returned validation errors (e.g., { phone: ["User exists"] })
+        if (err.response.data.errors) {
+          const firstKey = Object.keys(err.response.data.errors)[0];
+          const firstError = err.response.data.errors[firstKey];
+          if (Array.isArray(firstError)) {
+            msg = `${firstKey}: ${firstError[0]}`;
+          } else {
+            msg = String(firstError);
+          }
+        }
+      }
+      
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -139,7 +167,7 @@ const AuthModal = ({ mode, onClose, switchMode, onLogin }: AuthModalProps) => {
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                         placeholder="John"
                         required
                       />
@@ -154,7 +182,7 @@ const AuthModal = ({ mode, onClose, switchMode, onLogin }: AuthModalProps) => {
                         name="instituteName"
                         value={formData.instituteName}
                         onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                         placeholder="Academy"
                         required
                       />
@@ -190,7 +218,7 @@ const AuthModal = ({ mode, onClose, switchMode, onLogin }: AuthModalProps) => {
 
             {/* Error Message */}
             {error && (
-              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg flex items-center gap-2">
+              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg flex items-center gap-2 animate-in slide-in-from-top-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-red-600" />
                 {error}
               </div>
@@ -205,12 +233,13 @@ const AuthModal = ({ mode, onClose, switchMode, onLogin }: AuthModalProps) => {
               {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : (mode === 'login' ? "Login" : "Create Account")}
             </button>
 
-            {/* Demo Creds Hint */}
-            {mode === 'login' && !error && (
+            {/* Hint for Demo (Optional - removed if not needed, or kept for dev) */}
+            {/* {mode === 'login' && !error && (
               <div className="text-center text-xs text-slate-400 bg-slate-50 p-2 rounded border border-slate-100">
                 <span className="font-semibold">Demo:</span> Phone: 1234567890 | Pass: demo123
               </div>
-            )}
+            )} 
+            */}
 
             {/* Toggle Mode */}
             <p className="text-center text-sm text-slate-500 mt-4">

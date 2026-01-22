@@ -1,7 +1,10 @@
-import { useState, type FormEvent } from 'react';
-import { Plus, List } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, List, ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { testService } from '../../services/api';
 import type { DashboardData, Test } from '../../hooks/useDashboardData';
 import type { User } from '../../App';
+import toast from 'react-hot-toast';
 
 interface ExamsPageProps {
   data: DashboardData;
@@ -9,140 +12,142 @@ interface ExamsPageProps {
 }
 
 const ExamsPage = ({ data }: ExamsPageProps) => {
-  const { tests, setTests, marks, setMarks, students, batches } = data;
+  const { tests, students, batches } = data;
   const [viewMode, setViewMode] = useState<'list' | 'create' | 'marks'>('list');
   const [activeTest, setActiveTest] = useState<Test | null>(null);
-  const [marksEntry, setMarksEntry] = useState<Record<string | number, string | number>>({});
   
+  // Marks Entry State: Map studentId -> marks
+  const [marksEntry, setMarksEntry] = useState<Record<string, number>>({});
+  
+  // Create Test Form State
   const [testForm, setTestForm] = useState<Partial<Test>>({ 
     name: '', 
-    date: '', 
-    totalMarks: 100, 
-    batchId: batches[0]?.id, 
+    date: new Date().toISOString().split('T')[0], 
+    total_marks: 100, 
+    batch: '', 
     board: 'CBSE', 
-    duration: '3', 
-    questions: [] 
+    duration: '3.0' 
   });
 
-  const handleCreateTest = (e: FormEvent) => {
+  const queryClient = useQueryClient();
+
+  // --- Mutations ---
+
+  const createTestMutation = useMutation({
+    mutationFn: testService.create,
+    onSuccess: () => {
+      toast.success("Test Scheduled Successfully");
+      queryClient.invalidateQueries({ queryKey: ['tests'] });
+      setViewMode('list');
+      setTestForm({ ...testForm, name: '', batch: '' });
+    },
+    onError: (err: any) => {
+      toast.error("Failed to create test");
+      console.error(err);
+    }
+  });
+
+  const saveMarksMutation = useMutation({
+    mutationFn: (data: { testId: string, marks: any[] }) => 
+      testService.saveMarksBulk(data.testId, data.marks),
+    onSuccess: () => {
+      toast.success("Marks Saved Successfully");
+      queryClient.invalidateQueries({ queryKey: ['tests'] }); // Refetch tests to update averages
+      setViewMode('list');
+    },
+    onError: (err: any) => {
+      toast.error("Failed to save marks");
+      console.error(err);
+    }
+  });
+
+  // --- Handlers ---
+
+  const handleCreateTest = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!testForm.batchId) return;
-
-    const newTest: Test = { 
-      ...testForm, 
-      id: Date.now(), 
-      batchId: parseInt(testForm.batchId.toString()),
-      name: testForm.name || '',
-      date: testForm.date || '',
-      totalMarks: testForm.totalMarks || 100,
-      board: testForm.board || 'CBSE',
-      duration: testForm.duration || '3'
-    };
-    
-    setTests([...tests, newTest]);
-    setTestForm({ name: '', date: '', totalMarks: 100, batchId: batches[0]?.id, board: 'CBSE', duration: '3', questions: [] });
-    setViewMode('list');
+    if (!testForm.batch || !testForm.name) return;
+    createTestMutation.mutate(testForm);
   };
 
-  const openMarksEntry = (test: Test) => {
+  const handleOpenMarks = async (test: Test) => {
     setActiveTest(test);
-    const existingMarks = marks.filter(m => m.testId === test.id);
-    const marksMap: Record<string | number, string | number> = {};
-    existingMarks.forEach(m => marksMap[m.studentId] = m.marksObtained);
-    setMarksEntry(marksMap);
-    setViewMode('marks');
+    setMarksEntry({}); // Reset
+    
+    // Ideally, fetch existing marks for this test from API
+    // For now, we rely on what might be loaded or load freshly
+    try {
+      const existingMarks = await testService.getAllMarks(test.id);
+      const marksMap: Record<string, number> = {};
+      existingMarks.forEach((m: any) => {
+        marksMap[m.student] = m.marks_obtained;
+      });
+      setMarksEntry(marksMap);
+      setViewMode('marks');
+    } catch (error) {
+      toast.error("Could not load existing marks");
+    }
   };
 
-  const saveMarks = () => {
+  const handleSaveMarks = () => {
     if (!activeTest) return;
-    const otherMarks = marks.filter(m => m.testId !== activeTest.id);
-    const newMarks = Object.keys(marksEntry).map(studentId => ({
-      testId: activeTest.id,
-      studentId: parseInt(studentId),
-      marksObtained: parseInt(marksEntry[studentId]?.toString() || '0')
+    
+    // Convert map to array for API
+    const marksArray = Object.entries(marksEntry).map(([studentId, score]) => ({
+      student: studentId,
+      marks_obtained: score
     }));
-    setMarks([...otherMarks, ...newMarks]);
-    setViewMode('list');
+
+    saveMarksMutation.mutate({ testId: activeTest.id, marks: marksArray });
   };
+
+  // --- Views ---
 
   if (viewMode === 'create') {
     return (
-      <div className="bg-white rounded-xl p-6 border border-slate-200 max-w-4xl mx-auto">
+      <div className="bg-white rounded-xl p-6 border border-slate-200 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4">
         <div className="flex justify-between items-center mb-6">
           <h3 className="font-bold text-xl">Create New Test</h3>
-          <button onClick={() => setViewMode('list')} className="text-slate-500 hover:text-slate-700">
-            Cancel
-          </button>
+          <button onClick={() => setViewMode('list')} className="text-slate-500 hover:text-slate-700">Cancel</button>
         </div>
         <form onSubmit={handleCreateTest}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
               <label className="block text-sm font-medium mb-1">Test Name</label>
-              <input 
-                required 
-                value={testForm.name} 
-                onChange={e => setTestForm({...testForm, name: e.target.value})} 
-                placeholder="e.g. Physics Weekly Test"
-                className="w-full px-4 py-2 border rounded-lg"
-              />
+              <input required value={testForm.name} onChange={e => setTestForm({...testForm, name: e.target.value})} placeholder="e.g. Physics Weekly Test" className="w-full px-4 py-2 border rounded-lg" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Batch</label>
-              <select 
-                className="w-full border p-2 rounded-lg" 
-                value={testForm.batchId} 
-                onChange={e => setTestForm({...testForm, batchId: parseInt(e.target.value)})}
-              >
+              <select className="w-full border p-2 rounded-lg" value={testForm.batch} onChange={e => setTestForm({...testForm, batch: e.target.value})} required>
+                <option value="">Select Batch</option>
                 {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Date</label>
-              <input 
-                type="date" 
-                required 
-                value={testForm.date} 
-                onChange={e => setTestForm({...testForm, date: e.target.value})}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
+              <input type="date" required value={testForm.date} onChange={e => setTestForm({...testForm, date: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Board Pattern</label>
-              <select 
-                className="w-full border p-2 rounded-lg" 
-                value={testForm.board} 
-                onChange={e => setTestForm({...testForm, board: e.target.value})}
-              >
+              <select className="w-full border p-2 rounded-lg" value={testForm.board} onChange={e => setTestForm({...testForm, board: e.target.value})}>
                 <option value="CBSE">CBSE</option>
                 <option value="Bihar Board">Bihar Board</option>
                 <option value="ICSE">ICSE</option>
-                <option value="State Board">Other State Board</option>
+                <option value="State Board">Other</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Duration (Hours)</label>
-              <input 
-                type="number" 
-                step="0.5" 
-                required 
-                value={testForm.duration} 
-                onChange={e => setTestForm({...testForm, duration: e.target.value})}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
+              <input type="number" step="0.5" required value={testForm.duration} onChange={e => setTestForm({...testForm, duration: e.target.value})} className="w-full px-4 py-2 border rounded-lg" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Total Marks</label>
-              <input 
-                type="number" 
-                value={testForm.totalMarks} 
-                onChange={e => setTestForm({...testForm, totalMarks: parseInt(e.target.value)})}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
+              <input type="number" value={testForm.total_marks} onChange={e => setTestForm({...testForm, total_marks: Number(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" />
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="submit" className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">
-              Save & Create Test
+            <button type="submit" disabled={createTestMutation.isPending} className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 flex items-center gap-2">
+              {createTestMutation.isPending && <Loader2 className="animate-spin w-4 h-4"/>}
+              Save & Create
             </button>
           </div>
         </form>
@@ -151,46 +156,51 @@ const ExamsPage = ({ data }: ExamsPageProps) => {
   }
 
   if (viewMode === 'marks' && activeTest) {
-    const batchStudents = students.filter(s => parseInt(s.batchId as string) === activeTest.batchId);
+    const batchStudents = students.filter(s => s.batch === activeTest.batch);
+    
     return (
-      <div className="space-y-4 max-w-2xl mx-auto">
+      <div className="space-y-4 max-w-2xl mx-auto animate-in fade-in slide-in-from-right-4">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-xl font-bold">{activeTest.name}</h2>
-            <p className="text-gray-500">Max Marks: {activeTest.totalMarks}</p>
+            <p className="text-gray-500">Max Marks: {activeTest.total_marks}</p>
           </div>
-          <button onClick={() => setViewMode('list')} className="text-slate-500 hover:text-slate-700">
-            Back
-          </button>
+          <button onClick={() => setViewMode('list')} className="p-2 hover:bg-slate-100 rounded-lg"><ArrowLeft size={20}/></button>
         </div>
+        
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <table className="w-full text-left">
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="p-4">Student</th>
-                <th className="p-4 w-32">Marks</th>
+                <th className="p-4 w-32">Marks Obtained</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {batchStudents.map(s => (
                 <tr key={s.id}>
-                  <td className="p-4 font-medium">{s.name}</td>
+                  <td className="p-4 font-medium">{s.name} <span className="text-xs text-gray-400 block">{s.roll}</span></td>
                   <td className="p-4">
                     <input 
                       type="number" 
-                      className="w-full border rounded p-1 text-center" 
-                      max={activeTest.totalMarks} 
+                      className="w-full border rounded p-2 text-center focus:ring-2 focus:ring-indigo-500 outline-none" 
+                      max={activeTest.total_marks} 
                       value={marksEntry[s.id] || ''} 
-                      onChange={e => setMarksEntry({...marksEntry, [s.id]: e.target.value})} 
+                      onChange={e => setMarksEntry({...marksEntry, [s.id]: Number(e.target.value)})} 
+                      placeholder="0"
                     />
                   </td>
                 </tr>
               ))}
+              {batchStudents.length === 0 && (
+                <tr><td colSpan={2} className="p-6 text-center text-gray-500">No students found in this batch.</td></tr>
+              )}
             </tbody>
           </table>
           <div className="p-4 bg-gray-50 border-t flex justify-end">
-            <button onClick={saveMarks} className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700">
-              Save Marks
+            <button onClick={handleSaveMarks} disabled={saveMarksMutation.isPending} className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2">
+               {saveMarksMutation.isPending ? <Loader2 className="animate-spin w-4 h-4"/> : <Save size={18}/>}
+               Save Marks
             </button>
           </div>
         </div>
@@ -201,61 +211,45 @@ const ExamsPage = ({ data }: ExamsPageProps) => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Test Reports & Papers</h2>
-        <button 
-          onClick={() => setViewMode('create')}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700"
-        >
+        <h2 className="text-2xl font-bold text-gray-800">Exam Portal</h2>
+        <button onClick={() => setViewMode('create')} className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 transition-colors">
           <Plus size={18} /> New Test
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {tests.map(test => {
-          const testMarks = marks.filter(m => m.testId === test.id);
-          const avg = testMarks.length ? (testMarks.reduce((a, b) => a + b.marksObtained, 0) / testMarks.length).toFixed(1) : 0;
+          // Note: Average calculation relies on backend data or local calculation if marks are loaded
+          // Here we assume the backend might send an 'average_marks' field if implemented in serializer
+          // For now, we display basic info
           return (
-            <div 
-              key={test.id} 
-              className="bg-white rounded-xl p-5 border border-slate-200 hover:shadow-lg transition-all border-t-4 border-t-indigo-500"
-            >
+            <div key={test.id} className="bg-white rounded-xl p-5 border border-slate-200 hover:shadow-lg transition-all border-t-4 border-t-indigo-500 group">
               <div className="flex justify-between items-start mb-2">
-                <h3 className="font-bold text-lg">{test.name}</h3>
+                <h3 className="font-bold text-lg group-hover:text-indigo-600 transition-colors">{test.name}</h3>
                 <div className="flex flex-col items-end">
-                  <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 mb-1">
-                    {new Date(test.date).toLocaleDateString()}
-                  </span>
-                  <span className="text-[10px] uppercase font-bold text-indigo-600">
-                    {test.board || 'CBSE'}
-                  </span>
+                  <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 mb-1">{new Date(test.date).toLocaleDateString()}</span>
+                  <span className="text-[10px] uppercase font-bold text-indigo-600">{test.board}</span>
                 </div>
               </div>
-              <p className="text-sm text-gray-500 mb-4">
-                {batches.find(b => b.id === test.batchId)?.name}
-              </p>
-              <div className="flex items-center gap-4 text-sm mb-4">
-                <div>
-                  <p className="text-gray-400 text-xs">Average</p>
-                  <p className="font-bold text-gray-800">{avg} / {test.totalMarks}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-xs">Attended</p>
-                  <p className="font-bold text-gray-800">{testMarks.length}</p>
-                </div>
+              <p className="text-sm text-gray-500 mb-4">{test.batch_name || batches.find(b => b.id === test.batch)?.name || 'Unknown Batch'}</p>
+              
+              <div className="flex items-center gap-4 text-sm mb-4 bg-slate-50 p-2 rounded-lg">
+                <div><p className="text-gray-400 text-xs">Total Marks</p><p className="font-bold text-gray-800">{test.total_marks}</p></div>
+                <div><p className="text-gray-400 text-xs">Duration</p><p className="font-bold text-gray-800">{test.duration} hrs</p></div>
               </div>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => openMarksEntry(test)}
-                  className="flex-1 bg-slate-100 text-slate-700 py-2 px-3 rounded-lg text-xs font-medium hover:bg-slate-200 flex items-center justify-center gap-1"
-                >
-                  <List size={14} /> Marks
-                </button>
-              </div>
+
+              <button onClick={() => handleOpenMarks(test)} className="w-full bg-indigo-50 text-indigo-700 py-2 px-3 rounded-lg text-sm font-semibold hover:bg-indigo-100 flex items-center justify-center gap-2 transition-colors">
+                <List size={16} /> Update Marks
+              </button>
             </div>
           );
         })}
         {tests.length === 0 && (
-          <p className="col-span-3 text-center text-gray-400 py-10">No tests scheduled yet.</p>
+          <div className="col-span-full text-center py-16 bg-white rounded-xl border border-dashed border-slate-300">
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400"><List size={32} /></div>
+            <p className="text-gray-500 font-medium">No tests scheduled yet.</p>
+            <p className="text-sm text-gray-400">Create a new test to get started.</p>
+          </div>
         )}
       </div>
     </div>

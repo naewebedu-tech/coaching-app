@@ -1,133 +1,117 @@
-import { useState, type FormEvent } from 'react';
-import { Search, UserPlus, Eye, Trash2, CheckCircle, ArrowLeft } from 'lucide-react';
+import React, { useState, type FormEvent } from 'react';
+import { Search, UserPlus, Trash2, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { studentService } from '../../services/api';
 import type { DashboardData, Student } from '../../hooks/useDashboardData';
+import toast from 'react-hot-toast';
 
 interface StudentsPageProps {
   data: DashboardData;
 }
 
 const StudentsPage = ({ data }: StudentsPageProps) => {
-  const { students, setStudents, batches } = data;
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [selectedBatch, setSelectedBatch] = useState<string>('all');
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [currentStudent, setCurrentStudent] = useState<Partial<Student> | null>(null);
-  const [selectedStudentId, setSelectedStudentId] = useState<number | string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'profile'>('list');
+  const { students, batches } = data;
+  
+  // Local State for UI
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Form State
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    roll: '',
+    batch: '',
+    total_fees: ''
+  });
+
+  const queryClient = useQueryClient();
+
+  // --- Mutations ---
+
+  const createMutation = useMutation({
+    mutationFn: studentService.create,
+    onSuccess: () => {
+      toast.success("Student Added Successfully");
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      setIsModalOpen(false);
+      setFormData({ name: '', phone: '', roll: '', batch: '', total_fees: '' }); // Reset form
+    },
+    onError: (err: any) => {
+      console.error(err);
+      const msg = err.response?.data?.message || "Failed to add student";
+      toast.error(msg);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: studentService.delete,
+    onSuccess: () => {
+      toast.success("Student Deleted");
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+    onError: () => toast.error("Failed to delete student")
+  });
+
+  // --- Helpers ---
 
   const filteredStudents = students.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.phone.includes(searchTerm);
-    // Ensure we compare numbers to numbers for batchId
-    const matchesBatch = selectedBatch === 'all' || Number(s.batchId) === Number(selectedBatch);
+    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          s.phone.includes(searchTerm) || 
+                          (s.roll && s.roll.includes(searchTerm));
+    const matchesBatch = selectedBatch === 'all' || s.batch === selectedBatch;
     return matchesSearch && matchesBatch;
   });
 
-  const handleSaveStudent = (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!currentStudent) return;
-
-    if (currentStudent.id) {
-      // Edit existing
-      const updatedStudent = currentStudent as Student;
-      setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s));
-    } else {
-      // Add new
-      const newStudent: Student = {
-        ...currentStudent,
-        id: Date.now(),
-        feesPaid: 0, // Default to 0
-        // Ensure strictly typed fallbacks
-        totalFees: Number(currentStudent.totalFees) || 0,
-        batchId: Number(currentStudent.batchId)
-      } as Student;
-      setStudents([...students, newStudent]);
+    if (!formData.batch) {
+      toast.error("Please select a batch");
+      return;
     }
-    setIsEditing(false);
-    setCurrentStudent(null);
+    
+    createMutation.mutate({
+      name: formData.name,
+      phone: formData.phone,
+      roll: formData.roll,
+      batch: formData.batch,
+      total_fees: Number(formData.total_fees)
+    });
   };
 
-  const deleteStudent = (id: number | string) => {
-    if(window.confirm("Are you sure? This will delete all student data.")) {
-      setStudents(students.filter(s => s.id !== id));
-    }
-  };
-
-  // --- PROFILE VIEW ---
-  if (viewMode === 'profile' && selectedStudentId) {
-    const student = students.find(s => s.id === selectedStudentId);
-    if (!student) return <div>Student not found</div>;
-    
-    const batch = batches.find(b => b.id === Number(student.batchId));
-    
-    // FIX: No need to cast to string and back to int. They are already numbers.
-    const total = student.totalFees || 0;
-    const paid = student.feesPaid || 0;
-
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <button onClick={() => setViewMode('list')} className="p-2 hover:bg-slate-100 rounded-lg">
-            <ArrowLeft size={20} />
-          </button>
-          <h2 className="text-2xl font-bold">Student Profile</h2>
-        </div>
-        
-        <div className="bg-white rounded-xl p-6 border border-slate-200">
-          <div className="flex items-center gap-6">
-            <div className="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center text-3xl font-bold text-indigo-600">
-              {student.name.charAt(0)}
-            </div>
-            <div className="flex-1">
-              <h3 className="text-2xl font-bold">{student.name}</h3>
-              <p className="text-slate-500">Roll No: {student.roll} • {batch?.name}</p>
-              <div className="flex gap-4 mt-2">
-                <span className="text-sm bg-slate-100 px-3 py-1 rounded">📞 {student.phone}</span>
-                <span className="text-sm bg-slate-100 px-3 py-1 rounded">🎓 {batch?.timing}</span>
-              </div>
-            </div>
-            <div className="text-center p-4 bg-slate-50 rounded-xl">
-              <p className="text-xs text-slate-500 uppercase font-bold">Fee Status</p>
-              <p className="text-2xl font-bold text-green-600">
-                {paid >= total ? 'Paid' : `₹${(total - paid).toLocaleString()} Due`}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --- LIST VIEW ---
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
+      
+      {/* Header & Controls */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-2xl font-bold">Students</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Student Directory</h2>
+          <p className="text-sm text-gray-500">{students.length} Total Students</p>
+        </div>
         <button 
-          onClick={() => {
-            setCurrentStudent({ name: '', batchId: batches[0]?.id || 0, phone: '', roll: '', totalFees: 0 });
-            setIsEditing(true);
-          }}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700"
+          onClick={() => setIsModalOpen(true)} 
+          className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 transition-colors shadow-sm"
         >
-          <UserPlus className="w-4 h-4" />
-          Add Student
+          <UserPlus className="w-4 h-4" /> Add Student
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4">
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 text-slate-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input 
             type="text" 
-            placeholder="Search by name or phone..." 
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Search by name, roll no, or phone..." 
+            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
+            value={searchTerm} 
+            onChange={e => setSearchTerm(e.target.value)} 
           />
         </div>
         <select 
-          className="px-4 py-2 border border-slate-200 rounded-lg bg-white outline-none"
-          value={selectedBatch}
+          className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white min-w-[200px]" 
+          value={selectedBatch} 
           onChange={e => setSelectedBatch(e.target.value)}
         >
           <option value="all">All Batches</option>
@@ -135,64 +119,86 @@ const StudentsPage = ({ data }: StudentsPageProps) => {
         </select>
       </div>
 
-      {isEditing && currentStudent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">{currentStudent.id ? 'Edit Student' : 'Add New Student'}</h3>
-            <form onSubmit={handleSaveStudent} className="space-y-4">
-              <input 
-                type="text" 
-                placeholder="Full Name" 
-                required
-                className="w-full px-4 py-2 border rounded-lg"
-                value={currentStudent.name || ''}
-                onChange={e => setCurrentStudent({...currentStudent, name: e.target.value})}
-              />
-              <input 
-                type="text" 
-                placeholder="Roll Number"
-                className="w-full px-4 py-2 border rounded-lg"
-                value={currentStudent.roll || ''}
-                onChange={e => setCurrentStudent({...currentStudent, roll: e.target.value})}
-              />
-              <input 
-                type="tel" 
-                placeholder="Phone"
-                required
-                className="w-full px-4 py-2 border rounded-lg"
-                value={currentStudent.phone || ''}
-                onChange={e => setCurrentStudent({...currentStudent, phone: e.target.value})}
-              />
+      {/* Create Student Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold mb-4 text-slate-800">Add New Student</h3>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                <input 
+                  required 
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  placeholder="e.g. Rahul Kumar"
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
+                />
+              </div>
               
-              {/* Batch ID Select */}
-              <select 
-                className="w-full px-4 py-2 border rounded-lg"
-                value={currentStudent.batchId || ''}
-                // FIX: Convert string value from select to Number
-                onChange={e => setCurrentStudent({...currentStudent, batchId: Number(e.target.value)})}
-                required
-              >
-                <option value="">Select Batch</option>
-                {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Roll No</label>
+                  <input 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    placeholder="e.g. 101"
+                    value={formData.roll}
+                    onChange={e => setFormData({...formData, roll: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                  <input 
+                    type="tel" 
+                    required 
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    placeholder="10 digits"
+                    value={formData.phone}
+                    onChange={e => setFormData({...formData, phone: e.target.value})}
+                  />
+                </div>
+              </div>
 
-              {/* Total Fees Input */}
-              <input 
-                type="number" 
-                placeholder="Total Course Fee (₹)"
-                required
-                className="w-full px-4 py-2 border rounded-lg"
-                value={currentStudent.totalFees || ''}
-                // FIX: Convert input string to Number before setting state
-                onChange={e => setCurrentStudent({...currentStudent, totalFees: Number(e.target.value)})}
-              />
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Assign Batch</label>
+                <select 
+                  required 
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                  value={formData.batch}
+                  onChange={e => setFormData({...formData, batch: e.target.value})}
+                >
+                  <option value="">Select a batch</option>
+                  {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Total Course Fee (₹)</label>
+                <input 
+                  type="number" 
+                  required 
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
+                  placeholder="e.g. 15000"
+                  value={formData.total_fees}
+                  onChange={e => setFormData({...formData, total_fees: e.target.value})}
+                />
+              </div>
               
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setIsEditing(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">
+              <div className="flex gap-3 pt-4">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium"
+                >
                   Cancel
                 </button>
-                <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                  Save Student
+                <button 
+                  type="submit" 
+                  disabled={createMutation.isPending}
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center justify-center gap-2"
+                >
+                  {createMutation.isPending ? <Loader2 className="animate-spin w-4 h-4"/> : 'Save Student'}
                 </button>
               </div>
             </form>
@@ -200,80 +206,84 @@ const StudentsPage = ({ data }: StudentsPageProps) => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold">Name</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">Roll No</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">Batch</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">Fees Status</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {filteredStudents.map(student => {
-                // FIX: Removed unnecessary parseInt/casting
-                const total = student.totalFees || 0;
-                const paid = student.feesPaid || 0;
-                const pending = total - paid;
-                
-                return (
-                  <tr key={student.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-                          {student.name.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="font-medium">{student.name}</div>
-                          <div className="text-xs text-slate-500">{student.phone}</div>
-                        </div>
+      {/* Student List Table */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
+            <tr>
+              <th className="px-6 py-4">Student Name</th>
+              <th className="px-6 py-4">Batch</th>
+              <th className="px-6 py-4">Fee Status</th>
+              <th className="px-6 py-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {filteredStudents.map(student => {
+              const total = Number(student.total_fees);
+              const paid = Number(student.fees_paid);
+              const isPaid = paid >= total && total > 0;
+              const due = total - paid;
+
+              return (
+                <tr key={student.id} className="hover:bg-slate-50 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
+                        {student.name.charAt(0)}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">{student.roll}</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-medium">
-                        {batches.find(b => b.id === Number(student.batchId))?.name || 'Unassigned'}
+                      <div>
+                        <p className="font-medium text-slate-900">{student.name}</p>
+                        <p className="text-xs text-slate-500">{student.phone} • Roll: {student.roll || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                      {student.batch_name || 'Unassigned'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {isPaid ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <CheckCircle size={12} /> Fully Paid
                       </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {pending <= 0 ? (
-                        <span className="text-green-600 text-sm font-medium flex items-center gap-1">
-                          <CheckCircle size={14} /> Paid
-                        </span>
-                      ) : (
-                        <div className="text-sm">
-                          <span className="text-orange-600 font-medium">Due: ₹{pending.toLocaleString()}</span>
-                          <div className="w-20 h-1.5 bg-slate-200 rounded mt-1">
-                            <div className="h-full bg-green-500 rounded" style={{width: `${total > 0 ? (paid / total) * 100 : 0}%`}}></div>
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button 
-                          onClick={() => { setSelectedStudentId(student.id); setViewMode('profile'); }}
-                          className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1"
-                        >
-                          <Eye size={16} /> View
-                        </button>
-                        <button 
-                          onClick={() => deleteStudent(student.id)}
-                          className="text-slate-400 hover:text-red-500 p-2"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                        <AlertCircle size={12} /> Due: ₹{due.toLocaleString()}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button 
+                      onClick={() => {
+                        if (confirm(`Delete ${student.name}? This cannot be undone.`)) {
+                          deleteMutation.mutate(student.id);
+                        }
+                      }}
+                      className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                      title="Delete Student"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            
+            {filteredStudents.length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                      <Search size={24} />
+                    </div>
+                    <p>No students found matching your criteria.</p>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

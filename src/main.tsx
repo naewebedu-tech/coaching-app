@@ -1,50 +1,39 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
 
-// Providers
-import { BrowserRouter } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Toaster } from 'react-hot-toast'
-
-// Create a client for React Query
+// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // Data remains fresh for 5 minutes
-      refetchOnWindowFocus: false, // Prevent refetching when clicking between windows
+      refetchOnWindowFocus: false, // Prevent aggressive refetching
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
     },
   },
-})
+});
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <App />
-        {/* Toast notifications will appear at the top-center */}
-        <Toaster 
-          position="top-center" 
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
-              style: {
-                background: '#10B981', // Emerald-500
-              },
-            },
-            error: {
-              style: {
-                background: '#EF4444', // Red-500
-              },
-            },
-          }}
-        />
-      </BrowserRouter>
+      <App />
+      <Toaster position="top-right" toastOptions={{
+        duration: 3000,
+        style: {
+          background: '#333',
+          color: '#fff',
+          borderRadius: '10px',
+        },
+        success: {
+          iconTheme: {
+            primary: '#10B981',
+            secondary: '#fff',
+          },
+        },
+      }} />
     </QueryClientProvider>
   </React.StrictMode>,
-)
+);

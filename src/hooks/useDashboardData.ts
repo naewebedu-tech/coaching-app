@@ -1,133 +1,99 @@
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { batchService, studentService, feeService, testService, attendanceService } from '../services/api';
 
-// --- Interfaces ---
+// --- Interfaces (Matched to Django Models) ---
 
 export interface Batch {
-  id: number;
+  id: string; // UUIDs are strings
   name: string;
   timing: string;
+  student_count?: number;
 }
 
 export interface Student {
-  id: number;
+  id: string;
   name: string;
-  batchId: number | string; // keeping flexible as forms might handle strings
+  batch: string; // ID reference
+  batch_name?: string; // Read-only from serializer
   phone: string;
   roll: string;
-  feesPaid: number;
-  totalFees: number;
-  profilePic: string | null;
+  fees_paid: number;
+  total_fees: number;
+  fees_due?: number;
+  profile_pic: string | null;
 }
 
 export interface AttendanceRecord {
-  id?: number;
+  id: string;
+  batch: string; // ID
+  batch_name?: string;
   date: string;
-  batchId: number;
-  // Map of studentId -> status
-  records: Record<string | number, 'present' | 'absent'>; 
+  records: { id?: string; student: string; student_name?: string; status: 'present' | 'absent' }[];
 }
 
 export interface Fee {
-  id: number;
-  studentId: number;
+  id: string;
+  student: string; // ID
+  student_name?: string;
   amount: number;
-  date: string;
+  payment_date: string;
+  notes?: string;
+  screenshot?: string | null;
+  is_verified?: boolean;
 }
 
 export interface Test {
-  id: number;
+  id: string;
   name: string;
   date: string;
-  totalMarks: number;
-  batchId: number;
+  total_marks: number;
+  batch: string; // ID
+  batch_name?: string;
   board: string;
   duration: string;
-  questions?: any[];
 }
 
 export interface Mark {
-  testId: number;
-  studentId: number;
-  marksObtained: number;
+  id?: string;
+  testId?: string;
+  student: string; // ID
+  student_name?: string;
+  marks_obtained: number;
+  percentage?: number;
 }
 
-// Return type for the hook
+// --- Main Hook ---
+
 export interface DashboardData {
   batches: Batch[];
-  setBatches: React.Dispatch<React.SetStateAction<Batch[]>>;
   students: Student[];
-  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
   attendance: AttendanceRecord[];
-  setAttendance: React.Dispatch<React.SetStateAction<AttendanceRecord[]>>;
   fees: Fee[];
-  setFees: React.Dispatch<React.SetStateAction<Fee[]>>;
   tests: Test[];
-  setTests: React.Dispatch<React.SetStateAction<Test[]>>;
-  marks: Mark[];
-  setMarks: React.Dispatch<React.SetStateAction<Mark[]>>;
+  // Actions
+  refreshData: () => void;
 }
 
-// --- Hook Implementation ---
-
 const useDashboardData = (): DashboardData => {
-  // 1. Batches
-  const [batches, setBatches] = useState<Batch[]>(() => {
-    const saved = localStorage.getItem('cm_batches');
-    return saved ? JSON.parse(saved) : [
-      { id: 1, name: 'Class 10 - Science', timing: '4:00 PM' },
-      { id: 2, name: 'Class 12 - Physics', timing: '6:00 PM' }
-    ];
-  });
+  const queryClient = useQueryClient();
 
-  // 2. Students
-  const [students, setStudents] = useState<Student[]>(() => {
-    const saved = localStorage.getItem('cm_students');
-    return saved ? JSON.parse(saved) : [
-      { id: 1, name: 'Rohan Sharma', batchId: 1, phone: '9876543210', roll: '101', feesPaid: 5000, totalFees: 12000, profilePic: null },
-      { id: 2, name: 'Priya Verma', batchId: 1, phone: '9876543211', roll: '102', feesPaid: 12000, totalFees: 12000, profilePic: null },
-      { id: 3, name: 'Amit Kumar', batchId: 2, phone: '9876543212', roll: '201', feesPaid: 2000, totalFees: 15000, profilePic: null },
-    ];
-  });
+  const { data: batches = [] } = useQuery({ queryKey: ['batches'], queryFn: batchService.getAll });
+  const { data: students = [] } = useQuery({ queryKey: ['students'], queryFn: () => studentService.getAll() });
+  const { data: attendance = [] } = useQuery({ queryKey: ['attendance'], queryFn: attendanceService.getAll });
+  const { data: fees = [] } = useQuery({ queryKey: ['fees'], queryFn: () => feeService.getAll() });
+  const { data: tests = [] } = useQuery({ queryKey: ['tests'], queryFn: testService.getAll });
 
-  // 3. Attendance
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>(() => {
-    const saved = localStorage.getItem('cm_attendance');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // 4. Fees
-  const [fees, setFees] = useState<Fee[]>(() => {
-    const saved = localStorage.getItem('cm_fees');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // 5. Tests
-  const [tests, setTests] = useState<Test[]>(() => {
-    const saved = localStorage.getItem('cm_tests');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // 6. Marks
-  const [marks, setMarks] = useState<Mark[]>(() => {
-    const saved = localStorage.getItem('cm_marks');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // --- Effects to Sync with LocalStorage ---
-  useEffect(() => localStorage.setItem('cm_batches', JSON.stringify(batches)), [batches]);
-  useEffect(() => localStorage.setItem('cm_students', JSON.stringify(students)), [students]);
-  useEffect(() => localStorage.setItem('cm_attendance', JSON.stringify(attendance)), [attendance]);
-  useEffect(() => localStorage.setItem('cm_fees', JSON.stringify(fees)), [fees]);
-  useEffect(() => localStorage.setItem('cm_tests', JSON.stringify(tests)), [tests]);
-  useEffect(() => localStorage.setItem('cm_marks', JSON.stringify(marks)), [marks]);
+  const refreshData = () => {
+    queryClient.invalidateQueries();
+  };
 
   return { 
-    batches, setBatches, 
-    students, setStudents, 
-    attendance, setAttendance, 
-    fees, setFees, 
-    tests, setTests, 
-    marks, setMarks 
+    batches, 
+    students, 
+    attendance, 
+    fees, 
+    tests, 
+    refreshData 
   };
 };
 

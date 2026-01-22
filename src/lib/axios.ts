@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Change this if your Django server runs on a different port
-const BASE_URL = 'http://127.0.0.1:8000/api';
+const BASE_URL = 'https://api.coachingapp.in/api' // 'http://127.0.0.1:8000/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
