@@ -1,5 +1,5 @@
 import api from '../lib/axios';
-import type { Student, Batch, Test } from '../hooks/useDashboardData';
+import type { Batch, Test } from '../hooks/useDashboardData';
 // import type { LucideIcon } from 'lucide-react';
 // import type { User } from '../App';
 
@@ -43,10 +43,20 @@ export const studentService = {
     const response = await api.get(`/students/?${params.toString()}`);
     return response.data.students;
   },
-  create: async (data: Partial<Student>) => {
-    const response = await api.post('/students/', data);
-    return response.data.student;
+  // create: async (data: any) => {
+  //   const response = await api.post('/students/', data);
+  //   return response.data.student;
+  // },
+  // ✅ CORRECT - Need to specify headers for FormData
+  create: async (data: FormData) => {
+    const response = await api.post('/students/', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
   },
+  // --- NEW: Delete Student Functionality ---
   delete: async (id: string | number) => {
     const response = await api.delete(`/students/${id}/`);
     return response.data;
