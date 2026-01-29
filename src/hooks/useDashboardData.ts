@@ -21,6 +21,7 @@ export interface Student {
   total_fees: number;
   fees_due?: number;
   profile_pic: string | null;
+  address?: string;
 }
 
 export interface AttendanceRecord {
@@ -32,6 +33,17 @@ export interface AttendanceRecord {
 }
 
 export interface Fee {
+  id: string;
+  student: string; // ID
+  student_name?: string;
+  amount: number;
+  payment_date: string;
+  notes?: string;
+  screenshot?: string | null;
+  is_verified?: boolean;
+}
+
+export interface FeeRecord {
   id: string;
   student: string; // ID
   student_name?: string;

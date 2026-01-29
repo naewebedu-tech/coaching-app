@@ -273,7 +273,7 @@ const StudentsPage = ({ data }: StudentsPageProps) => {
                     <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                       <div className={`w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center overflow-hidden ${imagePreview ? 'border-indigo-500' : 'border-slate-300 bg-slate-50'}`}>
                         {imagePreview ? (
-                          <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                          <img src={`https://capi.coachingapp.in/${imagePreview}`} alt="Preview" className="w-full h-full object-cover" />
                         ) : (
                           <ImageIcon className="w-8 h-8 text-slate-400" />
                         )}

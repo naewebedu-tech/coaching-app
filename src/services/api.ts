@@ -56,6 +56,12 @@ export const studentService = {
     });
     return response.data;
   },
+  // --- FIX 1: Add the update method here ---
+  update: async (id: string | number, data: any) => {
+    // We use PATCH for partial updates (like just updating total_fees)
+    const response = await api.patch(`/students/${id}/`, data);
+    return response.data;
+  },
   // --- NEW: Delete Student Functionality ---
   delete: async (id: string | number) => {
     const response = await api.delete(`/students/${id}/`);
