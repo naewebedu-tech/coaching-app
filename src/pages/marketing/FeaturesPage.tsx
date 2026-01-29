@@ -1,4 +1,5 @@
 import { ScanFace, Printer, Brain, MessageCircle, CheckCircle, GraduationCap, FileText, Share2 } from 'lucide-react';
+import AIQPaper from '../dashboard/AiQuestionGenerator';
 
 const FeaturesPage = () => {
   return (
@@ -150,6 +151,7 @@ const FeaturesPage = () => {
             </div>
           </div>
         </div>
+        <AIQPaper />
       </div>
 
       {/* Feature 4: WhatsApp Integration */}

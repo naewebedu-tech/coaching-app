@@ -5,6 +5,7 @@ import { testService } from '../../services/api';
 import type { DashboardData, Test } from '../../hooks/useDashboardData';
 import type { User } from '../../App';
 import toast from 'react-hot-toast';
+import AIQPaper from './AiQuestionGenerator';
 
 interface ExamsPageProps {
   data: DashboardData;
@@ -252,7 +253,9 @@ const ExamsPage = ({ data }: ExamsPageProps) => {
           </div>
         )}
       </div>
+      <AIQPaper />
     </div>
+    
   );
 };
 
