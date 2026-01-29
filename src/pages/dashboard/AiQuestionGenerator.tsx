@@ -341,7 +341,7 @@ export default function AIQPaper() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
              <Layers className="text-yellow-400" />
-             <h1 className="text-xl font-bold">ExamForge AI</h1>
+             <h1 className="text-xl font-bold">AI Question Paper</h1>
           </div>
 
           <div className="flex gap-2 bg-gray-800 p-1 rounded-lg">
@@ -383,6 +383,8 @@ export default function AIQPaper() {
         {view === 'form' && (
            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="text-center mb-8 print:hidden">
+                <h2 className="text-xl font-extrabold text-red-400">(For Demo Only, feature coming Soon)</h2>
+
                 <h2 className="text-3xl font-extrabold text-gray-800">AI Question Paper Generator</h2>
                 <p className="text-gray-600 mt-2">Generate print-ready papers and OMR sheets for any board or subject instantly.</p>
               </div>
