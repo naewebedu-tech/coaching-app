@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Camera, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Save, CheckCircle, XCircle, Loader2, Users, CheckSquare, Square } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { attendanceService } from '../../services/api';
 import type { DashboardData } from '../../hooks/useDashboardData';
@@ -25,28 +25,22 @@ const AttendancePage = ({ data }: AttendancePageProps) => {
   useEffect(() => {
     if (!selectedBatch) return;
 
-    // 1. Find if attendance exists for this batch & date in the loaded data
+    // 1. Find if attendance exists
     const existingRecord = attendance.find(
       (r) => r.batch === selectedBatch && r.date === date
     );
 
     if (existingRecord) {
-      // Load existing status
       setIsNewRecord(false);
       const newStatusMap: Record<string, 'present' | 'absent'> = {};
-      
-      // Map API records array to local state object
       existingRecord.records.forEach((rec) => {
         newStatusMap[rec.student] = rec.status;
       });
       setStatusMap(newStatusMap);
     } else {
-      // Reset for new entry
       setIsNewRecord(true);
       const batchStudents = students.filter(s => s.batch === selectedBatch);
       const initialStatus: Record<string, 'present' | 'absent'> = {};
-      
-      // Default to 'present' for better UX (or 'absent' if preferred)
       batchStudents.forEach(s => {
         initialStatus[s.id] = 'present';
       });
@@ -71,8 +65,6 @@ const AttendancePage = ({ data }: AttendancePageProps) => {
   // --- Handlers ---
 
   const handleSave = () => {
-    // Format payload for Django API
-    // Expected: { batch: uuid, date: YYYY-MM-DD, records: [{ student: uuid, status: '...' }] }
     const recordsArray = Object.entries(statusMap).map(([studentId, status]) => ({
       student: studentId,
       status: status
@@ -86,83 +78,107 @@ const AttendancePage = ({ data }: AttendancePageProps) => {
   };
 
   const toggleStatus = (studentId: string) => {
+    // Haptic feedback for mobile feel
+    if (navigator.vibrate) navigator.vibrate(50);
+
     setStatusMap(prev => ({
       ...prev,
       [studentId]: prev[studentId] === 'present' ? 'absent' : 'present'
     }));
   };
 
+  const markAll = (status: 'present' | 'absent') => {
+    if (navigator.vibrate) navigator.vibrate(50);
+    const newMap = { ...statusMap };
+    activeStudents.forEach(s => newMap[s.id] = status);
+    setStatusMap(newMap);
+  };
+
   // Filter students for the active batch
   const activeStudents = students.filter(s => s.batch === selectedBatch);
 
-  // Stats for the current view
+  // Stats
   const presentCount = Object.values(statusMap).filter(s => s === 'present').length;
   const totalCount = activeStudents.length;
+  const absentCount = totalCount - presentCount;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Attendance Manager</h2>
-          <p className="text-sm text-gray-500">
-            {isNewRecord ? 'Marking New Attendance' : 'Editing Existing Record'}
-          </p>
-        </div>
-      </div>
+    <div className="pb-24 md:pb-0 animate-in fade-in duration-300"> {/* Added padding bottom for mobile sticky footer */}
       
-      {/* Controls Bar */}
-      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-end">
-        <div className="flex-1 w-full md:w-auto">
-          <label className="block text-sm font-medium mb-1 text-gray-700">Date</label>
-          <input 
-            type="date" 
-            value={date} 
-            onChange={e => setDate(e.target.value)} 
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" 
-          />
-        </div>
-        <div className="flex-1 w-full md:w-auto">
-          <label className="block text-sm font-medium mb-1 text-gray-700">Batch</label>
-          <select 
-            value={selectedBatch} 
-            onChange={e => setSelectedBatch(e.target.value)} 
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
-          >
-            <option value="" disabled>Select a batch</option>
-            {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
-        </div>
+      {/* 1. Sticky Header Controls (Mobile Optimized) */}
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm -mx-4 px-4 py-3 md:mx-0 md:px-0 md:py-0 md:static md:shadow-none md:border-none md:bg-transparent md:backdrop-blur-none mb-4 md:mb-6">
         
-        <div className="flex gap-2 w-full md:w-auto">
-          {/* AI Scan Button (Placeholder for future feature) */}
-          <button className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-50 transition-colors flex-1 md:flex-none justify-center">
-            <Camera size={18} /> <span className="hidden sm:inline">AI Scan</span>
-          </button>
-          
+        {/* Desktop Title (Hidden on Mobile to save space) */}
+        <div className="hidden md:flex justify-between items-center mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Attendance Manager</h2>
+            <p className="text-sm text-gray-500">{isNewRecord ? 'Marking New' : 'Editing Record'}</p>
+          </div>
+          {/* Desktop Save Button */}
           <button 
             onClick={handleSave} 
             disabled={saveMutation.isPending || activeStudents.length === 0}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 transition-colors flex-1 md:flex-none justify-center disabled:opacity-50 shadow-md hover:shadow-lg"
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 transition-colors shadow-md"
           >
             {saveMutation.isPending ? <Loader2 className="animate-spin w-4 h-4"/> : <Save size={18} />} 
-            Save
+            Save Attendance
           </button>
         </div>
+
+        {/* Inputs Row */}
+        <div className="flex flex-row gap-3">
+          <div className="flex-1">
+            <label className="text-xs font-bold text-gray-500 uppercase md:hidden block mb-1">Date</label>
+            <input 
+              type="date" 
+              value={date} 
+              onChange={e => setDate(e.target.value)} 
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white" 
+            />
+          </div>
+          <div className="flex-[1.5]">
+            <label className="text-xs font-bold text-gray-500 uppercase md:hidden block mb-1">Batch</label>
+            <select 
+              value={selectedBatch} 
+              onChange={e => setSelectedBatch(e.target.value)} 
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-ellipsis"
+            >
+              <option value="" disabled>Select Batch</option>
+              {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Mobile Quick Actions Bar */}
+        <div className="flex items-center justify-between mt-3 md:hidden">
+            <div className="flex gap-2">
+                <button onClick={() => markAll('present')} className="text-xs bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <CheckSquare size={12} /> All Present
+                </button>
+                <button onClick={() => markAll('absent')} className="text-xs bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <Square size={12} /> All Absent
+                </button>
+            </div>
+            <div className="text-xs font-bold text-slate-500">
+                {presentCount}/{totalCount} Present
+            </div>
+        </div>
+      </div>
+      
+      {/* 2. Desktop Stats & Actions (Hidden on Mobile) */}
+      <div className="hidden md:flex bg-white rounded-xl p-4 border border-slate-200 shadow-sm mb-6 justify-between items-center">
+         <div className="flex gap-4">
+             <button onClick={() => markAll('present')} className="text-sm text-green-700 hover:underline flex items-center gap-1"><CheckSquare size={16}/> Mark All Present</button>
+             <button onClick={() => markAll('absent')} className="text-sm text-red-600 hover:underline flex items-center gap-1"><Square size={16}/> Mark All Absent</button>
+         </div>
+         <div className="flex gap-6 text-sm font-medium">
+            <span className="text-green-600">Present: {presentCount}</span>
+            <span className="text-red-500">Absent: {absentCount}</span>
+         </div>
       </div>
 
-      {/* Summary Stats */}
-      {activeStudents.length > 0 && (
-        <div className="flex items-center gap-4 text-sm font-medium bg-indigo-50 text-indigo-800 p-3 rounded-lg border border-indigo-100">
-          <span>Total: {totalCount}</span>
-          <span className="w-px h-4 bg-indigo-200"></span>
-          <span className="text-green-700">Present: {presentCount}</span>
-          <span className="w-px h-4 bg-indigo-200"></span>
-          <span className="text-red-600">Absent: {totalCount - presentCount}</span>
-        </div>
-      )}
-
-      {/* Student Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* 3. Student Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
         {activeStudents.map(student => {
           const isPresent = statusMap[student.id] === 'present';
           
@@ -171,23 +187,23 @@ const AttendancePage = ({ data }: AttendancePageProps) => {
               key={student.id} 
               onClick={() => toggleStatus(student.id)} 
               className={`
-                cursor-pointer p-4 rounded-xl border-2 flex items-center justify-between transition-all select-none
+                cursor-pointer p-3 md:p-4 rounded-xl border-2 flex items-center justify-between transition-all select-none touch-manipulation active:scale-[0.98]
                 ${isPresent 
-                  ? 'border-green-500 bg-green-50 shadow-sm' 
+                  ? 'border-green-500 bg-green-50/50 shadow-sm' 
                   : 'border-red-200 bg-white hover:border-red-300 shadow-sm'
                 }
               `}
             >
               <div className="flex items-center gap-3">
                 <div className={`
-                  w-10 h-10 rounded-full flex items-center justify-center font-bold text-white transition-colors
+                  w-10 h-10 rounded-full flex items-center justify-center font-bold text-white transition-colors text-sm
                   ${isPresent ? 'bg-green-500' : 'bg-slate-300'}
                 `}>
                   {student.name.charAt(0)}
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-900 leading-tight">{student.name}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Roll: {student.roll}</p>
+                  <p className="font-semibold text-slate-900 leading-tight text-sm md:text-base">{student.name}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Roll: {student.roll || 'N/A'}</p>
                 </div>
               </div>
               
@@ -204,11 +220,29 @@ const AttendancePage = ({ data }: AttendancePageProps) => {
 
         {activeStudents.length === 0 && (
           <div className="col-span-full py-16 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
-            <p className="text-slate-500 font-medium">No students found in this batch.</p>
-            <p className="text-sm text-slate-400 mt-1">Add students from the "Students" tab to start marking attendance.</p>
+            <Users className="mx-auto h-10 w-10 text-slate-300 mb-2" />
+            <p className="text-slate-500 font-medium">No students found.</p>
+            <p className="text-sm text-slate-400 mt-1">Select a different batch.</p>
           </div>
         )}
       </div>
+
+      {/* 4. Mobile Sticky Bottom Bar (Save Button) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-30 flex gap-4 items-center">
+         <div className="flex flex-col text-xs font-medium text-slate-500">
+             <span>Total: {totalCount}</span>
+             <span className="text-red-500">Abs: {absentCount}</span>
+         </div>
+         <button 
+            onClick={handleSave} 
+            disabled={saveMutation.isPending || activeStudents.length === 0}
+            className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2"
+         >
+            {saveMutation.isPending ? <Loader2 className="animate-spin" /> : <Save size={20} />}
+            Save Attendance
+         </button>
+      </div>
+
     </div>
   );
 };
