@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { 
   ArrowLeft, Share2, Printer, CheckCircle, Camera, 
   Trash2, Eye, Edit2, Save, X, IndianRupee, 
-  CalendarPlus, AlertCircle
+  CalendarPlus, AlertCircle,
 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { feeService, studentService } from '../../services/api'; 
@@ -109,7 +109,7 @@ const InvoiceTemplate = ({ student, user }: { student: Student, user: User }) =>
     );
 };
 
-// --- Add Fee Modal (Reusable for Single or Batch) ---
+// --- Add Fee Modal (Mobile Optimized) ---
 const AddFeeModal = ({ 
     isOpen, 
     onClose, 
@@ -137,50 +137,59 @@ const AddFeeModal = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <CalendarPlus className="text-indigo-600" />
-                        {isBatch ? `Add Fee for Class (${count} Students)` : 'Add Monthly Fee'}
-                    </h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
-                </div>
-                
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-1">Fee Amount (₹)</label>
-                        <input 
-                            type="number" 
-                            required
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                            placeholder="e.g. 500"
-                        />
-                        <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                            <AlertCircle size={12} /> This will be added to pending dues.
-                        </p>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-1">Month / Description</label>
-                        <input 
-                            type="text" 
-                            required
-                            value={month}
-                            onChange={(e) => setMonth(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                            placeholder="e.g. October Fee"
-                        />
+        <div className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center sm:p-4">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
+            
+            {/* Modal Content */}
+            <div className="bg-white w-full md:w-full max-w-md md:rounded-xl rounded-t-2xl shadow-2xl relative z-10 animate-in slide-in-from-bottom duration-300">
+                <div className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <CalendarPlus className="text-indigo-600" />
+                            {isBatch ? `Batch Fee (${count} Students)` : 'Add Monthly Fee'}
+                        </h3>
+                        <button onClick={onClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-500"><X size={20} /></button>
                     </div>
                     
-                    <div className="flex gap-3 pt-4">
-                        <button type="button" onClick={onClose} className="flex-1 py-2 border border-slate-300 rounded-lg font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
-                        <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md">
-                            {isBatch ? 'Apply to All' : 'Add Fee'}
-                        </button>
-                    </div>
-                </form>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Fee Amount (₹)</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                                <input 
+                                    type="number" 
+                                    required
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                    className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-lg font-medium"
+                                    placeholder="500"
+                                />
+                            </div>
+                            <p className="text-xs text-amber-600 mt-2 flex items-center gap-1 bg-amber-50 p-2 rounded-lg">
+                                <AlertCircle size={14} /> Amount will be added to pending dues.
+                            </p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Month / Description</label>
+                            <input 
+                                type="text" 
+                                required
+                                value={month}
+                                onChange={(e) => setMonth(e.target.value)}
+                                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                                placeholder="e.g. October Fee"
+                            />
+                        </div>
+                        
+                        <div className="flex gap-3 pt-4">
+                            <button type="button" onClick={onClose} className="flex-1 py-3 border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                            <button type="submit" className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 active:scale-95 transition-transform">
+                                {isBatch ? 'Apply All' : 'Add Fee'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );
@@ -212,26 +221,26 @@ const OverviewView = ({
   }), [batches, students]);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">Fee Dashboard</h2>
-        <div className="text-sm text-slate-500 font-medium hidden md:block">
-          Total Collection: <span className="text-green-600 font-bold">₹{batchStats.reduce((acc, b) => acc + b.collected, 0).toLocaleString()}</span>
+    <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 pb-20 md:pb-0">
+      <div className="flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-20 py-3 md:static border-b md:border-none px-4 md:px-0 -mx-4 md:mx-0">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800">Fee Dashboard</h2>
+        <div className="text-xs md:text-sm text-slate-500 font-medium">
+          Total: <span className="text-green-600 font-bold">₹{batchStats.reduce((acc, b) => acc + b.collected, 0).toLocaleString()}</span>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 px-4 md:px-0">
         {batchStats.map(stat => (
           <div 
             key={stat.id} 
             onClick={() => onSelectBatch(stat.id)} 
-            className="bg-white p-5 rounded-xl border border-slate-200 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all border-l-4 border-l-indigo-500 group"
+            className="bg-white p-5 rounded-xl border border-slate-200 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all border-l-4 border-l-indigo-500 group relative overflow-hidden"
           >
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-4 relative z-10">
               <h3 className="font-bold text-lg group-hover:text-indigo-600 transition-colors">{stat.name}</h3>
               <div className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-xs font-bold">{stat.studentCount} Students</div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-3 relative z-10">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Collected</span>
                 <span className="font-bold text-green-600">₹{stat.collected.toLocaleString()}</span>
@@ -280,11 +289,9 @@ const BatchDetailView = ({
   // Batch Fee Mutation
   const batchFeeMutation = useMutation({
       mutationFn: async ({ amount, note }: { amount: string, note: string }) => {
-          // Creating an array of promises to update all students
           const promises = batchStudents.map(student => {
               const formData = new FormData();
               formData.append('student', student.id);
-              // Negative value for fee addition
               formData.append('amount', `-${amount}`); 
               formData.append('payment_date', new Date().toISOString());
               formData.append('notes', `Monthly Fee: ${note}`);
@@ -293,7 +300,7 @@ const BatchDetailView = ({
           return Promise.all(promises);
       },
       onSuccess: () => {
-          toast.success("Fees added to all students successfully!");
+          toast.success("Fees added to all students!");
           queryClient.invalidateQueries({ queryKey: ['fees'] });
           queryClient.invalidateQueries({ queryKey: ['students'] });
           setIsFeeModalOpen(false);
@@ -308,34 +315,71 @@ const BatchDetailView = ({
 
   return (
     <>
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-      <div className="flex flex-wrap items-center justify-between sticky top-0 bg-gray-50/95 backdrop-blur z-10 py-2 border-b border-gray-200/50 gap-2">
-        <div className="flex items-center gap-4">
-            <button onClick={onBack} className="p-2 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-gray-200 shadow-sm">
-                <ArrowLeft size={20} />
-            </button>
-            <div>
-                <h2 className="text-2xl font-bold text-gray-800">{batch?.name}</h2>
-                <p className="text-sm text-gray-500">{batchStudents.length} Students</p>
+    <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-right-4 pb-20 md:pb-0">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 -mx-4 px-4 py-3 md:static md:border-none md:bg-transparent md:p-0 md:mx-0 shadow-sm md:shadow-none">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+                <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors border border-slate-200 md:border-transparent">
+                    <ArrowLeft size={20} />
+                </button>
+                <div>
+                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 leading-none">{batch?.name}</h2>
+                    <p className="text-xs md:text-sm text-gray-500 mt-1">{batchStudents.length} Students</p>
+                </div>
             </div>
-        </div>
-        <div className="flex gap-2">
-            <button 
-                onClick={() => setIsFeeModalOpen(true)}
-                className="flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-lg text-sm font-bold hover:bg-amber-200 transition-colors shadow-sm"
-            >
-                <CalendarPlus size={16} /> <span className="hidden sm:inline">Add Monthly Fee</span>
-            </button>
-            <button 
-                onClick={onPrintBatch}
-                className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
-            >
-                <Printer size={16} /> <span className="hidden sm:inline">Print All Invoices</span>
-            </button>
-        </div>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+                <button 
+                    onClick={() => setIsFeeModalOpen(true)}
+                    className="flex-shrink-0 flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-2 rounded-lg text-xs md:text-sm font-bold border border-amber-100 active:scale-95 transition-transform"
+                >
+                    <CalendarPlus size={16} /> Add Batch Fee
+                </button>
+                <button 
+                    onClick={onPrintBatch}
+                    className="flex-shrink-0 flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-2 rounded-lg text-xs md:text-sm font-bold border border-indigo-100 active:scale-95 transition-transform"
+                >
+                    <Printer size={16} /> Print All
+                </button>
+            </div>
+          </div>
       </div>
       
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      {/* Mobile Card List (Hidden on Desktop) */}
+      <div className="md:hidden space-y-3 px-4 md:px-0">
+         {batchStudents.map(s => {
+             const total = Number(s.total_fees);
+             const paid = Number(s.fees_paid);
+             const due = total - paid;
+             return (
+                 <div key={s.id} onClick={() => onSelectStudent(s.id)} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm active:bg-slate-50 transition-colors relative overflow-hidden">
+                     <div className="flex justify-between items-start mb-2">
+                        <div>
+                            <div className="font-bold text-slate-800">{s.name}</div>
+                            <div className="text-xs text-slate-500">Roll: {s.roll || 'N/A'} • {s.phone}</div>
+                        </div>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); handleWhatsApp(s); }}
+                            className="p-2 bg-green-50 text-green-600 rounded-full"
+                        >
+                            <Share2 size={18} />
+                        </button>
+                     </div>
+                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+                        <div className="text-xs font-semibold text-slate-400">DUE AMOUNT</div>
+                        <div className={`text-lg font-bold ${due > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                             ₹{due.toLocaleString()}
+                        </div>
+                     </div>
+                 </div>
+             )
+         })}
+      </div>
+
+      {/* Desktop Table (Hidden on Mobile) */}
+      <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left whitespace-nowrap">
             <thead className="bg-slate-50 border-b">
@@ -487,8 +531,8 @@ const StudentDetailView = ({
   });
 
   // Handle Standard Payment
-  const handleAddPayment = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddPayment = (e?: React.FormEvent) => {
+    if(e) e.preventDefault();
     if (!amount) return;
     const formData = new FormData();
     formData.append('student', studentId);
@@ -499,7 +543,6 @@ const StudentDetailView = ({
     addPaymentMutation.mutate(formData);
   };
 
-  // Handle Monthly Fee Addition (Negative Payment)
   const handleAddMonthlyFee = (feeAmount: string, feeMonth: string) => {
       const formData = new FormData();
       formData.append('student', studentId);
@@ -526,54 +569,63 @@ const StudentDetailView = ({
 
   return (
     <>
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200">
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">{student.name}</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-                <span>Roll: {student.roll || 'N/A'}</span>
-                <span>•</span>
-                <span>{student.phone}</span>
+    <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-right-4 pb-24 md:pb-0">
+      
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 -mx-4 px-4 py-3 md:static md:border-none md:bg-transparent md:p-0 md:mx-0 shadow-sm md:shadow-none">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+                <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors border border-slate-200 md:border-transparent">
+                    <ArrowLeft size={20} />
+                </button>
+                <div className="flex-1">
+                    <h2 className="text-xl font-bold text-gray-800 leading-none">{student.name}</h2>
+                    <p className="text-xs text-slate-500 mt-1">Roll: {student.roll || 'N/A'}</p>
+                </div>
+                {/* Mobile Quick Actions in Header */}
+                <div className="flex md:hidden gap-2">
+                    <button onClick={handleWhatsApp} className="p-2 bg-green-50 text-green-600 rounded-full border border-green-100">
+                        <Share2 size={18} />
+                    </button>
+                    <button onClick={onPrint} className="p-2 bg-slate-50 text-slate-600 rounded-full border border-slate-100">
+                        <Printer size={18} />
+                    </button>
+                </div>
+            </div>
+            
+            {/* Desktop Actions */}
+            <div className="hidden md:flex gap-2 flex-wrap">
+                <button 
+                    onClick={() => setIsFeeModalOpen(true)}
+                    className="bg-amber-100 text-amber-800 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-amber-200 transition-colors font-bold text-sm"
+                >
+                    <CalendarPlus size={16} /> Add Monthly Fee
+                </button>
+                <button 
+                    onClick={handleWhatsApp}
+                    className="bg-green-100 text-green-700 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-200 transition-colors font-medium text-sm"
+                >
+                    <Share2 size={16} /> WhatsApp
+                </button>
+                <button 
+                    onClick={onPrint} 
+                    className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm font-medium text-sm"
+                >
+                    <Printer size={16} /> Statement
+                </button>
             </div>
           </div>
-        </div>
-        
-        <div className="flex gap-2 flex-wrap">
-            <button 
-                onClick={() => setIsFeeModalOpen(true)}
-                className="bg-amber-100 text-amber-800 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-amber-200 transition-colors font-bold text-sm"
-            >
-                <CalendarPlus size={16} /> Add Monthly Fee
-            </button>
-            <button 
-                onClick={handleWhatsApp}
-                className="bg-green-100 text-green-700 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-200 transition-colors font-medium text-sm"
-            >
-                <Share2 size={16} /> WhatsApp
-            </button>
-            <button 
-                onClick={onPrint} 
-                className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm font-medium text-sm"
-            >
-                <Printer size={16} /> Statement
-            </button>
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 md:px-0">
         
         {/* Left Column: Payment Form */}
-        <div className="bg-white rounded-xl p-6 border border-slate-200 h-fit shadow-sm lg:sticky lg:top-4">
+        <div className="bg-white rounded-xl p-4 md:p-6 border border-slate-200 shadow-sm lg:sticky lg:top-4">
           
           {/* Fee Stats with Edit Capability */}
           <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100 relative">
             <div className="flex justify-between items-center mb-2 text-sm">
-              <span className="text-slate-500">Total Course Fee:</span>
+              <span className="text-slate-500">Course Fee:</span>
               <div className="flex items-center gap-2">
                  {isEditingTotal ? (
                      <div className="flex items-center gap-1 absolute right-2 bg-white p-1 shadow-lg border rounded z-10">
@@ -597,12 +649,22 @@ const StudentDetailView = ({
               </div>
             </div>
             <div className="flex justify-between mb-3 text-sm">
-              <span className="text-slate-500">Paid Amount:</span>
+              <span className="text-slate-500">Paid:</span>
               <span className="font-medium text-green-600">₹{paid.toLocaleString()}</span>
             </div>
             <div className="border-t border-slate-200 pt-3 flex justify-between items-center">
-              <span className="font-bold text-slate-700">Remaining Due:</span>
+              <span className="font-bold text-slate-700">Due:</span>
               <span className={`text-lg font-bold ${due > 0 ? 'text-red-500' : 'text-green-500'}`}>₹{due.toLocaleString()}</span>
+            </div>
+            
+            {/* Mobile Only: Add Monthly Fee Button inside card */}
+            <div className="md:hidden mt-4 pt-4 border-t border-dashed border-slate-200">
+                <button 
+                    onClick={() => setIsFeeModalOpen(true)}
+                    className="w-full py-2 bg-amber-50 text-amber-700 rounded-lg text-sm font-bold border border-amber-100 flex items-center justify-center gap-2"
+                >
+                    <CalendarPlus size={14} /> Add Monthly Fee
+                </button>
             </div>
           </div>
           
@@ -610,15 +672,15 @@ const StudentDetailView = ({
               <IndianRupee size={18} /> Record Payment
           </h3>
           
-          <form onSubmit={handleAddPayment} className="space-y-4">
-             {/* Quick Amounts */}
-             <div className="flex flex-wrap gap-2 mb-2">
+          <div className="space-y-4">
+             {/* Quick Amounts - Scrollable on mobile */}
+             <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
                 {[500, 1000, 2000].map(amt => (
                     <button 
                         key={amt}
                         type="button" 
                         onClick={() => setQuickAmount(amt)}
-                        className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1 rounded-full transition-colors font-medium border border-slate-200"
+                        className="flex-shrink-0 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg transition-colors font-medium border border-slate-200"
                     >
                         +{amt}
                     </button>
@@ -627,22 +689,32 @@ const StudentDetailView = ({
                     <button 
                         type="button" 
                         onClick={() => setQuickAmount(-1)}
-                        className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full transition-colors font-medium border border-indigo-100"
+                        className="flex-shrink-0 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-2 rounded-lg transition-colors font-medium border border-indigo-100"
                     >
                         Full Due
                     </button>
                 )}
              </div>
 
-            <div>
-              <input 
-                type="number" 
-                value={amount} 
-                onChange={e => setAmount(e.target.value)} 
-                required 
-                className="w-full px-4 py-3 text-lg font-medium border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:font-normal" 
-                placeholder="Enter Amount (₹)" 
-              />
+            <div className="flex gap-3">
+              <div className="flex-1">
+                  <input 
+                    type="number" 
+                    value={amount} 
+                    onChange={e => setAmount(e.target.value)} 
+                    className="w-full px-4 py-3 text-lg font-medium border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:font-normal" 
+                    placeholder="₹ Amount" 
+                  />
+              </div>
+              <div className="w-1/3">
+                 <div 
+                  onClick={() => fileInputRef.current?.click()} 
+                  className={`h-full border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all ${screenshot ? 'border-green-500 bg-green-50' : 'border-slate-300'}`}
+                 >
+                    {screenshot ? <CheckCircle size={20} className="text-green-600"/> : <Camera size={20} className="text-slate-400"/>}
+                    <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setScreenshot(e.target.files[0])} />
+                 </div>
+              </div>
             </div>
 
             <div>
@@ -651,57 +723,62 @@ const StudentDetailView = ({
                 value={notes} 
                 onChange={e => setNotes(e.target.value)} 
                 className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm" 
-                placeholder="Note (e.g. UPI Ref, Month)" 
-              />
-            </div>
-            
-            {/* Screenshot Upload */}
-            <div 
-              onClick={() => fileInputRef.current?.click()} 
-              className={`
-                border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all group
-                ${screenshot ? 'border-green-500 bg-green-50/50' : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'}
-              `}
-            >
-              {screenshot ? (
-                <div className="flex items-center gap-3 w-full justify-center">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <div className="text-left overflow-hidden">
-                    <p className="text-sm font-semibold text-green-700 truncate max-w-[150px]">{screenshot.name}</p>
-                    <p className="text-[10px] text-green-600">Click to change</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-slate-500 group-hover:text-indigo-600">
-                  <Camera className="w-5 h-5" />
-                  <span className="text-sm font-medium">Add Receipt / Photo</span>
-                </div>
-              )}
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                accept="image/*" 
-                capture="environment" 
-                className="hidden" 
-                onChange={(e) => e.target.files?.[0] && setScreenshot(e.target.files[0])} 
+                placeholder="Note (e.g. UPI Ref)" 
               />
             </div>
 
             <button 
-              type="submit" 
+              onClick={handleAddPayment}
               disabled={addPaymentMutation.isPending || !amount} 
-              className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 shadow-lg shadow-indigo-200"
+              className="hidden md:block w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-indigo-200"
             >
               {addPaymentMutation.isPending ? 'Processing...' : 'Confirm Payment'}
             </button>
-          </form>
+          </div>
         </div>
 
         {/* Right Column: History */}
-        <div className="lg:col-span-2 bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex flex-col h-full min-h-[400px]">
-          <h3 className="font-bold text-lg mb-4 text-slate-800">Transaction History</h3>
-          <div className="overflow-y-auto flex-1 pr-2 scrollbar-thin scrollbar-thumb-slate-200">
-            <table className="w-full text-left border-collapse">
+        <div className="lg:col-span-2 bg-white rounded-xl p-4 md:p-6 border border-slate-200 shadow-sm flex flex-col h-full min-h-[400px]">
+          <h3 className="font-bold text-lg mb-4 text-slate-800">History</h3>
+          <div className="overflow-y-auto flex-1 pr-0 md:pr-2 scrollbar-thin scrollbar-thumb-slate-200">
+            {/* Mobile History: Card View */}
+            <div className="md:hidden space-y-3">
+                {studentFees.map(fee => {
+                    const isFeeAddition = Number(fee.amount) < 0;
+                    return (
+                        <div key={fee.id} className="border border-slate-100 rounded-lg p-3 bg-slate-50/50">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="font-bold text-slate-800 text-sm">
+                                        {new Date(fee.payment_date).toLocaleDateString()}
+                                    </div>
+                                    <div className="text-xs text-slate-400">
+                                        {new Date(fee.payment_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </div>
+                                </div>
+                                <div className={`font-bold ${isFeeAddition ? 'text-amber-600' : 'text-green-600'}`}>
+                                    {isFeeAddition ? '-' : '+'}₹{Math.abs(Number(fee.amount)).toLocaleString()}
+                                </div>
+                            </div>
+                            <div className="mt-2 text-xs text-slate-500 truncate">{fee.notes || 'No notes'}</div>
+                            <div className="mt-2 flex justify-end gap-3 pt-2 border-t border-slate-200/50">
+                                {fee.screenshot && (
+                                    <a href={fee.screenshot} target="_blank" className="text-indigo-600 text-xs font-bold flex items-center gap-1"><Eye size={12}/> View Proof</a>
+                                )}
+                                <button 
+                                    onClick={() => { if(confirm("Delete?")) deletePaymentMutation.mutate(fee.id); }}
+                                    className="text-red-500 text-xs font-bold flex items-center gap-1"
+                                >
+                                    <Trash2 size={12}/> Delete
+                                </button>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+
+            {/* Desktop History: Table View */}
+            <table className="hidden md:table w-full text-left border-collapse">
               <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-bold sticky top-0 z-10">
                 <tr>
                   <th className="p-3 rounded-tl-lg">Date</th>
@@ -733,7 +810,6 @@ const StudentDetailView = ({
                               target="_blank" 
                               rel="noreferrer" 
                               className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
-                              title="View Receipt"
                             >
                               <Eye size={16} />
                             </a>
@@ -749,7 +825,6 @@ const StudentDetailView = ({
                               }
                             }}
                             className="text-slate-300 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-full"
-                            title="Delete"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -757,23 +832,27 @@ const StudentDetailView = ({
                       </tr>
                     );
                 })}
-                {studentFees.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="p-12 text-center">
-                        <div className="flex flex-col items-center text-slate-400">
-                            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-2">
-                                <IndianRupee size={20} />
-                            </div>
-                            <p className="text-sm font-medium">No payments recorded yet.</p>
-                        </div>
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
+            
+            {studentFees.length === 0 && (
+                 <div className="py-10 text-center text-slate-400 text-sm">No history found</div>
+            )}
           </div>
         </div>
       </div>
+      
+      {/* Mobile Sticky Bottom Bar (Confirm Payment) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40">
+          <button 
+             onClick={handleAddPayment}
+             disabled={addPaymentMutation.isPending || !amount} 
+             className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-lg active:scale-95 transition-transform flex justify-center items-center gap-2 shadow-lg disabled:opacity-50"
+          >
+             {addPaymentMutation.isPending ? 'Processing...' : `Confirm ₹${amount || '0'}`}
+          </button>
+      </div>
+
     </div>
     
     <AddFeeModal 
@@ -870,7 +949,7 @@ const InvoiceView = ({
 }) => {
     if (!student) return null;
     return (
-      <div className="fixed inset-0 bg-slate-900/60 z-50 overflow-y-auto flex items-center justify-center p-4 backdrop-blur-sm print:p-0 print:bg-white">
+      <div className="fixed inset-0 bg-slate-900/60 z-[9999] overflow-y-auto flex items-center justify-center p-4 backdrop-blur-sm print:p-0 print:bg-white">
         <div className="bg-white w-full max-w-2xl shadow-2xl relative animate-in zoom-in-95 duration-200 print:shadow-none print:w-full print:max-w-none">
           <div className="p-8 print:p-0">
               <InvoiceTemplate student={student} user={user} />
