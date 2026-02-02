@@ -10,8 +10,8 @@ interface Question {
   id: number;
   text: string;
   translation?: string;
-  options?: string[]; // Only for MCQs
-  optionsTranslation?: string[]; 
+  options?: string[];
+  optionsTranslation?: string[];
 }
 
 interface PaperData {
@@ -26,7 +26,6 @@ interface PaperData {
   mcqCount: number;
   shortCount: number;
   longCount: number;
-  // Data Sections
   mcqs: Question[];
   shortQuestions: Question[];
   longQuestions: Question[];
@@ -39,36 +38,38 @@ interface AIQPaperProps {
 }
 
 // ------------------------------------------------------------------
-// 1. MOCK DATA GENERATOR (Updated for Sections)
+// 1. MOCK DATA GENERATOR (Matches your screenshot)
 // ------------------------------------------------------------------
 const getMockData = (topic: string, mcqC: number, shortC: number, longC: number, lang: string) => {
     const isBi = lang === 'bilingual' || lang === 'hindi';
     
-    // MCQs
+    // MCQs - Matches the "Sample MCQ" look
     const mcqs = Array.from({ length: mcqC }).map((_, i) => ({
       id: i + 1,
       text: `Sample MCQ ${i + 1}: What is the core principle of ${topic}?`,
       translation: isBi ? `नमूना प्रश्न ${i + 1}: ${topic} का मूल सिद्धांत क्या है?` : undefined,
       options: [
-        i % 2 === 0 ? "Short Option A" : "A very long detailed option explanation for testing layout", 
-        "Option B", 
+        "Short Option A", 
+        "A very long detailed option explanation for testing layout (लेआउट परीक्षण के लिए एक बहुत लंबा विस्तृत विकल्प)", 
         "Option C", 
         "Option D"
       ],
       optionsTranslation: isBi ? [
-        i % 2 === 0 ? "छोटा विकल्प A" : "लेआउट परीक्षण के लिए एक बहुत लंबा विस्तृत विकल्प", 
-        "विकल्प B", "विकल्प C", "विकल्प D"
+        "छोटा विकल्प A", 
+        "विकल्प B", 
+        "विकल्प C", 
+        "विकल्प D"
       ] : undefined
     }));
 
-    // Short Questions
+    // Short Qs
     const shortQuestions = Array.from({ length: shortC }).map((_, i) => ({
       id: i + 1,
       text: `Define the term '${topic}' and list two characteristics.`,
       translation: isBi ? `'${topic}' शब्द को परिभाषित करें और दो विशेषताओं को सूचीबद्ध करें।` : undefined
     }));
 
-    // Long Questions
+    // Long Qs
     const longQuestions = Array.from({ length: longC }).map((_, i) => ({
       id: i + 1,
       text: `Explain in detail the impact of ${topic} on modern society with examples.`,
@@ -79,16 +80,12 @@ const getMockData = (topic: string, mcqC: number, shortC: number, longC: number,
 };
 
 // ------------------------------------------------------------------
-// 2. API HELPER (Updated for Structured Response)
+// 2. API HELPER
 // ------------------------------------------------------------------
-const generateQuestionsAI = async (
-  formData: any
-): Promise<{ mcqs: Question[], shortQuestions: Question[], longQuestions: Question[], isDemo: boolean }> => {
-  
+const generateQuestionsAI = async (formData: any): Promise<{ mcqs: Question[], shortQuestions: Question[], longQuestions: Question[], isDemo: boolean }> => {
   const apiKey: string = ""; // Insert Key Here
   const { topic, subject, class: level, languageMode: lang, mcqCount, shortCount, longCount } = formData;
 
-  // A. Demo Check
   if (!apiKey || apiKey.trim() === "") {
       console.log("Using Demo Data (No API Key)");
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -96,7 +93,6 @@ const generateQuestionsAI = async (
       return { ...mocks, isDemo: true };
   }
 
-  // B. AI Prompt
   let prompt = `Generate an exam paper for Class ${level}, Subject: ${subject}, Topic: ${topic}.
   Return ONLY valid JSON.
   Structure:
@@ -119,13 +115,11 @@ const generateQuestionsAI = async (
     );
     
     if (!response.ok) throw new Error("API Error");
-
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(jsonStr);
     
-    // Map Response
     const mapQ = (q: any, i: number) => ({
       id: i + 1,
       text: q.text,
@@ -150,21 +144,12 @@ const generateQuestionsAI = async (
 
 // --- Components ---
 
-// --- Fix: Added initialTopic to the type definition ---
-const InputForm = ({ 
-  onGenerate, 
-  loading, 
-  initialTopic 
-}: { 
-  onGenerate: (data: any) => void, 
-  loading: boolean, 
-  initialTopic?: string // <--- Added this line
-}) => {
+const InputForm = ({ onGenerate, loading, initialTopic }: { onGenerate: (data: any) => void, loading: boolean, initialTopic?: string }) => {
   const [formData, setFormData] = useState({
     coachingName: "NAE COACHING CENTER",
     examTitle: "QUARTERLY EXAM – 2026",
     subject: "Home Science",
-    topic: initialTopic || "Balanced Diet", // Uses the prop here
+    topic: initialTopic || "Balanced Diet",
     class: "12",
     time: "3 Hours",
     marks: "70",
@@ -180,14 +165,12 @@ const InputForm = ({
 
   return (
     <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 max-w-2xl w-full mx-auto print:hidden">
-      
-      {/* Status Banner */}
       <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 mb-6 flex items-start gap-3">
         <AlertTriangle className="text-indigo-500 shrink-0 mt-0.5" size={18} />
         <div>
-            <h3 className="text-sm font-bold text-indigo-800">Smart Layout Engine</h3>
+            <h3 className="text-sm font-bold text-indigo-800">Layout Engine</h3>
             <p className="text-xs text-indigo-700 mt-1">
-                Options automatically arrange into <b>2x2 Grid</b> or <b>Vertical Stack</b> based on text length.
+                Generates a professional <b>2-Column Board Pattern</b> layout.
             </p>
         </div>
       </div>
@@ -230,7 +213,6 @@ const InputForm = ({
            <input name="marks" value={formData.marks} onChange={handleChange} className="input-field" />
         </div>
         
-        {/* Question Counts */}
         <div className="md:col-span-2 grid grid-cols-3 gap-4 bg-gray-50 p-3 rounded-lg border border-gray-100 mt-2">
             <div className="space-y-1">
                 <label className="font-bold text-gray-600 text-xs">MCQs</label>
@@ -319,21 +301,19 @@ const PaperScaler = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// --- 3. PAPER VIEW (Smart Layout) ---
+// --- 3. IMPROVED PAPER VIEW WITH BETTER PRINT SUPPORT ---
 const PaperView = ({ data }: { data: PaperData }) => {
   
-  // Helper to determine layout class based on option length
   const getOptionLayoutClass = (options?: string[]) => {
       if(!options) return '';
-      // If any option is longer than 25 chars, force vertical stack (4x1)
-      // Otherwise use grid (2x2)
-      const isLong = options.some(opt => opt.length > 25);
+      const isLong = options.some(opt => opt.length > 30);
       return isLong ? 'options-stack' : 'options-grid';
   };
 
   return (
     <>
-    <div className="paper-container w-[210mm] min-h-[297mm] mx-auto bg-white p-[10mm] shadow-2xl mb-8 print:shadow-none print:w-full print:p-0 print:m-0 font-[Times_New_Roman] text-black leading-tight relative">
+    {/* 'print-only-section' is key for the global print css */}
+    <div className="print-only-section w-[210mm] min-h-[297mm] mx-auto bg-white p-[15mm] shadow-2xl mb-8 font-[Times_New_Roman] text-black leading-tight relative text-left">
       
       {data.isDemo && (
           <div className="absolute top-0 right-0 bg-red-100 text-red-600 px-4 py-2 text-xs font-bold uppercase tracking-wider print:hidden rounded-bl-lg">
@@ -341,12 +321,13 @@ const PaperView = ({ data }: { data: PaperData }) => {
           </div>
       )}
 
-      {/* Header */}
-      <div className="text-center border-b-2 border-black pb-2 mb-2">
-        <h1 className="text-[24pt] font-black uppercase tracking-wide leading-none m-0">{data.coachingName}</h1>
+      {/* HEADER SECTION (Matches Screenshot) - Will repeat on each page in print */}
+      <div className="paper-header text-center border-b-2 border-black pb-2 mb-3">
+        <h1 className="text-[26pt] font-black uppercase tracking-wide leading-none m-0">{data.coachingName}</h1>
         <h2 className="text-[12pt] font-bold uppercase mt-1.5">{data.examTitle}</h2>
         <div className="text-[11pt] font-bold mt-1 uppercase">{data.subject} | {data.topic}</div>
         
+        {/* Meta Bar */}
         <table className="w-full border-t border-b border-black mt-2 font-bold text-[10pt] border-collapse">
           <tbody>
             <tr>
@@ -357,15 +338,15 @@ const PaperView = ({ data }: { data: PaperData }) => {
           </tbody>
         </table>
         
-        <div className="text-[9pt] italic text-left mt-1">
+        <div className="text-[9pt] italic text-left mt-1.5">
           <strong>INSTRUCTIONS:</strong> 1. Answer in your own words. 2. Figures in margin indicate full marks. 3. 15 Min extra reading time.
         </div>
       </div>
 
-      {/* --- 2-COLUMN LAYOUT WRAPPER --- */}
+      {/* --- CONTENT COLUMNS WRAPPER --- */}
       <div className="content-columns">
         
-        {/* MCQs */}
+        {/* SECTION A: MCQs */}
         {data.mcqs.length > 0 && (
             <>
                 <div className="section-header">SECTION-A (Objective Type) | खण्ड-अ</div>
@@ -377,17 +358,17 @@ const PaperView = ({ data }: { data: PaperData }) => {
                     const layoutClass = getOptionLayoutClass(q.options);
                     return (
                       <div key={q.id} className="question-box">
-                        <div className="font-bold text-[10pt] mb-1">
+                        <div className="font-bold text-[10pt] mb-1 leading-snug">
                           {q.id}. {q.text} <br/>
                           {q.translation && <span className="font-bold">{q.translation}</span>}
                         </div>
                         
                         <div className={layoutClass}>
                           {q.options?.map((opt, optIdx) => (
-                            <div key={optIdx} className="option-item text-[9.5pt]">
+                            <div key={optIdx} className="option-item text-[9.5pt] leading-snug">
                               ({String.fromCharCode(65 + optIdx)}) {opt}
                               {q.optionsTranslation && q.optionsTranslation[optIdx] && (
-                                 <span className="ml-2 font-medium">({q.optionsTranslation[optIdx]})</span>
+                                 <span className="ml-1">({q.optionsTranslation[optIdx]})</span>
                               )}
                             </div>
                           ))}
@@ -398,16 +379,16 @@ const PaperView = ({ data }: { data: PaperData }) => {
             </>
         )}
 
-        {/* Short Questions */}
+        {/* SECTION B: Short */}
         {data.shortQuestions.length > 0 && (
             <>
                 <div className="section-header mt-4">SECTION-B (Short Answer) | खण्ड-ब</div>
-                <div className="text-center text-[9pt] italic mb-2">
+                <div className="text-center text-[9pt] italic mb-2 column-span-all">
                     <strong>निर्देश:</strong> लघु उत्तरीय प्रश्न (2 Marks Each)
                 </div>
                 {data.shortQuestions.map((q, idx) => (
                     <div key={q.id} className="question-box">
-                        <div className="text-[10pt]">
+                        <div className="text-[10pt] leading-snug">
                             <strong>{idx + 1}.</strong> {q.text} <br/>
                             {q.translation && <span className="font-bold">{q.translation}</span>}
                         </div>
@@ -416,16 +397,16 @@ const PaperView = ({ data }: { data: PaperData }) => {
             </>
         )}
 
-        {/* Long Questions */}
+        {/* SECTION C: Long */}
         {data.longQuestions.length > 0 && (
             <>
                 <div className="section-header mt-4">SECTION-C (Long Answer) | खण्ड-स</div>
-                <div className="text-center text-[9pt] italic mb-2">
+                <div className="text-center text-[9pt] italic mb-2 column-span-all">
                     <strong>निर्देश:</strong> दीर्घ उत्तरीय प्रश्न (5 Marks Each)
                 </div>
                 {data.longQuestions.map((q, idx) => (
                     <div key={q.id} className="question-box">
-                        <div className="text-[10pt]">
+                        <div className="text-[10pt] leading-snug">
                             <strong>{idx + 1}.</strong> {q.text} <br/>
                             {q.translation && <span className="font-bold">{q.translation}</span>}
                         </div>
@@ -436,64 +417,153 @@ const PaperView = ({ data }: { data: PaperData }) => {
 
       </div>
       
-      <div className="text-center font-bold mt-4 border-t pt-2 text-sm">--- END OF TEST ---</div>
+      <div className="text-center font-bold mt-4 border-t pt-2 text-sm column-span-all">--- END OF TEST ---</div>
     </div>
 
+    {/* --- ENHANCED GLOBAL PRINT CSS --- */}
     <style>{`
+        /* 2-Column Newspaper Layout */
         .content-columns {
             column-count: 2;
             column-gap: 6mm;
             column-rule: 1px solid #ccc;
             text-align: justify;
         }
+        
         .section-header {
             background: #eee;
             border: 1px solid #000;
             text-align: center;
             font-weight: bold;
-            padding: 2px;
+            padding: 3px 2px;
             margin: 10px 0 5px 0;
             font-size: 10pt;
             column-span: all;
             -webkit-column-span: all;
-        }
-        .question-box {
-            margin-bottom: 8px;
-            break-inside: avoid;
-            page-break-inside: avoid;
+            break-after: avoid;
+            page-break-after: avoid;
         }
         
-        /* 2x2 Grid Layout */
+        .column-span-all {
+            column-span: all;
+            -webkit-column-span: all;
+        }
+        
+        .question-box {
+            margin-bottom: 8px;
+            break-inside: avoid; /* Keeps question+options together */
+            page-break-inside: avoid;
+            -webkit-column-break-inside: avoid;
+        }
+        
         .options-grid {
             display: flex;
             flex-wrap: wrap;
             margin-top: 2px;
         }
         .options-grid .option-item {
-            width: 50%;
+            width: 50%; /* 2 per line */
             box-sizing: border-box;
             padding-right: 4px;
-        }
-
-        /* 4x1 Vertical Stack Layout */
-        .options-stack {
-            display: flex;
-            flex-direction: column;
-            margin-top: 2px;
-        }
-        .options-stack .option-item {
-            width: 100%;
             margin-bottom: 2px;
         }
+        .options-stack .option-item {
+            width: 100%; /* 1 per line */
+            margin-bottom: 3px;
+        }
 
+        /* ENHANCED PRINT LOGIC */
         @media print {
-            @page { margin: 10mm; size: A4; }
-            .paper-container {
-                box-shadow: none !important;
-                margin: 0 !important;
-                width: 100% !important;
+            /* Reset body for clean printing */
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+                background: white;
+                overflow: visible;
             }
-            body { background-color: white; }
+            
+            /* Hide everything except the paper */
+            body * {
+                visibility: hidden;
+            }
+            
+            /* Show only the paper content */
+            .print-only-section,
+            .print-only-section * {
+                visibility: visible;
+            }
+            
+            /* Position paper at top-left */
+            .print-only-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 210mm !important;
+                min-height: auto !important;
+                margin: 0 !important;
+                padding: 12mm 15mm !important;
+                box-shadow: none !important;
+                overflow: visible !important;
+                background: white !important;
+            }
+            
+            /* A4 Page settings */
+            @page {
+                size: A4 portrait;
+                margin: 12mm 15mm;
+            }
+            
+            /* Ensure columns work in print */
+            .content-columns {
+                column-count: 2;
+                column-gap: 6mm;
+                column-rule: 1px solid #ccc;
+                orphans: 3;
+                widows: 3;
+            }
+            
+            /* Better page breaks */
+            .section-header {
+                break-after: avoid;
+                page-break-after: avoid;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            
+            .question-box {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                orphans: 2;
+                widows: 2;
+            }
+            
+            /* Header stays at top of each page */
+            .paper-header {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+            
+            /* Hide print controls */
+            .print\\:hidden {
+                display: none !important;
+                visibility: hidden !important;
+            }
+            
+            /* Ensure proper font sizes */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+        }
+        
+        /* Screen-only styles */
+        @media screen {
+            .print-only-section {
+                box-sizing: border-box;
+            }
         }
     `}</style>
     </>
@@ -502,32 +572,110 @@ const PaperView = ({ data }: { data: PaperData }) => {
 
 const OMRView = ({ data }: { data: PaperData }) => {
   const totalQs = data.mcqs.length;
-  // Use 4 columns for dense OMR
   const questionsPerCol = Math.max(1, Math.ceil(totalQs / 4));
 
   return (
-    <div className="w-[210mm] min-h-[297mm] mx-auto bg-white p-[10mm] shadow-2xl print:shadow-none print:w-full print:p-0 print:m-0 font-sans text-black">
+    <>
+    <div className="print-only-section w-[210mm] min-h-[297mm] mx-auto bg-white p-[15mm] shadow-2xl mb-8 font-sans text-black">
       <div className="text-center border-b-2 border-gray-800 pb-2 mb-4">
         <h1 className="text-2xl font-black uppercase tracking-widest">{data.coachingName}</h1>
         <h2 className="text-lg font-bold uppercase mt-1">OMR SHEET</h2>
+        <p className="text-sm mt-1">{data.subject} - {data.topic}</p>
       </div>
-      <div className="grid grid-cols-2 gap-4 border-2 border-gray-800 p-2 rounded mb-4 text-sm">
-        <div className="flex items-baseline gap-2"><span className="font-bold">Name:</span> <div className="border-b border-dashed border-black flex-grow h-4"></div></div>
-        <div className="flex items-baseline gap-2"><span className="font-bold">Subject:</span> <div className="border-b border-dashed border-black flex-grow h-4">{data.subject}</div></div>
+      
+      <div className="grid grid-cols-2 gap-4 border-2 border-gray-800 p-3 rounded mb-4 text-sm">
+        <div className="flex items-baseline gap-2">
+          <span className="font-bold">Name:</span> 
+          <div className="border-b border-dashed border-black flex-grow h-5"></div>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <span className="font-bold">Roll No:</span> 
+          <div className="border-b border-dashed border-black flex-grow h-5"></div>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <span className="font-bold">Class:</span> 
+          <div className="border-b border-dashed border-black flex-grow h-5">{data.class}</div>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <span className="font-bold">Date:</span> 
+          <div className="border-b border-dashed border-black flex-grow h-5"></div>
+        </div>
       </div>
-      <div className="grid grid-flow-col gap-x-6 gap-y-1 border-t-2 border-gray-800 pt-4" style={{ gridTemplateRows: `repeat(${questionsPerCol}, min-content)`, gridTemplateColumns: `repeat(4, 1fr)` }}>
+      
+      <div className="border-2 border-gray-800 p-2 mb-2">
+        <p className="text-xs font-bold mb-1">INSTRUCTIONS:</p>
+        <ul className="text-[10px] list-disc list-inside space-y-0.5">
+          <li>Use black/blue pen only</li>
+          <li>Darken the circle completely</li>
+          <li>Do not make any stray marks</li>
+        </ul>
+      </div>
+      
+      <div className="grid grid-flow-col gap-x-6 gap-y-2 border-t-2 border-gray-800 pt-4" 
+           style={{ 
+             gridTemplateRows: `repeat(${questionsPerCol}, min-content)`, 
+             gridTemplateColumns: `repeat(4, 1fr)` 
+           }}>
         {data.mcqs.map((q) => (
           <div key={q.id} className="flex items-center text-xs whitespace-nowrap">
-             <span className="w-6 text-right mr-2 font-bold text-gray-700">{q.id}.</span>
+             <span className="w-7 text-right mr-2 font-bold text-gray-700">{q.id}.</span>
              <div className="flex gap-2">
                 {['A','B','C','D'].map((opt) => (
-                  <div key={opt} className="w-4 h-4 rounded-full border border-gray-600 flex items-center justify-center text-[7pt] font-bold hover:bg-black hover:text-white">{opt}</div>
+                  <div key={opt} 
+                       className="w-5 h-5 rounded-full border-2 border-gray-700 flex items-center justify-center text-[8pt] font-bold hover:bg-gray-200 cursor-pointer transition-colors">
+                    {opt}
+                  </div>
                 ))}
              </div>
           </div>
         ))}
       </div>
+      
+      <div className="text-center mt-6 text-xs italic text-gray-600">
+        Signature of Candidate: ___________________
+      </div>
     </div>
+    
+    <style>{`
+      @media print {
+        html, body {
+          width: 210mm;
+          height: 297mm;
+          margin: 0;
+          padding: 0;
+          background: white;
+        }
+        
+        body * {
+          visibility: hidden;
+        }
+        
+        .print-only-section,
+        .print-only-section * {
+          visibility: visible;
+        }
+        
+        .print-only-section {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 210mm !important;
+          margin: 0 !important;
+          padding: 15mm !important;
+          box-shadow: none !important;
+        }
+        
+        @page {
+          size: A4 portrait;
+          margin: 15mm;
+        }
+        
+        .print\\:hidden {
+          display: none !important;
+        }
+      }
+    `}</style>
+    </>
   );
 };
 
@@ -548,7 +696,7 @@ export default function AIQPaper({ onBack, initialTopic }: AIQPaperProps) {
         shortQuestions: result.shortQuestions,
         longQuestions: result.longQuestions,
         isDemo: result.isDemo,
-        questions: [] // Legacy field fallback
+        questions: [] 
     });
     
     setLoading(false);
@@ -565,8 +713,8 @@ export default function AIQPaper({ onBack, initialTopic }: AIQPaperProps) {
              <h1 className="text-lg font-bold leading-none">AI Paper</h1>
           </div>
           <div className="flex gap-3">
-             {view !== 'form' && <button onClick={() => setView('form')} className="hidden md:flex items-center gap-2 bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium"><PlusCircle size={16}/> New</button>}
-             {view !== 'form' && <button onClick={() => window.print()} className="flex items-center gap-2 bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-lg text-sm font-medium"><Printer size={16}/> Print</button>}
+             {view !== 'form' && <button onClick={() => setView('form')} className="hidden md:flex items-center gap-2 bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50"><PlusCircle size={16}/> New</button>}
+             {view !== 'form' && <button onClick={() => window.print()} className="flex items-center gap-2 bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"><Printer size={16}/> Print</button>}
           </div>
         </div>
       </nav>
@@ -590,9 +738,9 @@ export default function AIQPaper({ onBack, initialTopic }: AIQPaperProps) {
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2 z-50 flex justify-around md:hidden print:hidden pb-safe">
-         <button onClick={() => setView('form')} className={`flex flex-col items-center gap-1 p-2 rounded-lg w-20 ${view === 'form' ? 'text-indigo-600' : 'text-gray-400'}`}><Settings size={20}/><span className="text-[10px]">Config</span></button>
-         <button onClick={() => paperData ? setView('paper') : null} disabled={!paperData} className={`flex flex-col items-center gap-1 p-2 rounded-lg w-20 ${view === 'paper' ? 'text-indigo-600' : 'text-gray-400'}`}><FileText size={20}/><span className="text-[10px]">Paper</span></button>
-         <button onClick={() => paperData ? setView('omr') : null} disabled={!paperData} className={`flex flex-col items-center gap-1 p-2 rounded-lg w-20 ${view === 'omr' ? 'text-indigo-600' : 'text-gray-400'}`}><CheckSquare size={20}/><span className="text-[10px]">OMR</span></button>
+         <button onClick={() => setView('form')} className={`flex flex-col items-center gap-1 p-2 rounded-lg w-20 transition-colors ${view === 'form' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400 hover:bg-gray-50'}`}><Settings size={20}/><span className="text-[10px]">Config</span></button>
+         <button onClick={() => paperData ? setView('paper') : null} disabled={!paperData} className={`flex flex-col items-center gap-1 p-2 rounded-lg w-20 transition-colors ${view === 'paper' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400 hover:bg-gray-50'} disabled:opacity-30`}><FileText size={20}/><span className="text-[10px]">Paper</span></button>
+         <button onClick={() => paperData ? setView('omr') : null} disabled={!paperData} className={`flex flex-col items-center gap-1 p-2 rounded-lg w-20 transition-colors ${view === 'omr' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400 hover:bg-gray-50'} disabled:opacity-30`}><CheckSquare size={20}/><span className="text-[10px]">OMR</span></button>
       </div>
     </div>
   );
