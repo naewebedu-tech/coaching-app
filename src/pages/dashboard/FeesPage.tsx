@@ -16,33 +16,33 @@ interface FeesPageProps {
   user: User;
 }
 
-// --- Helper Functions ---
+// --- Helper Functions (Updated for Hindi) ---
 
 const generateWhatsAppText = (student: Student, instituteName: string) => {
     const total = Number(student.total_fees);
     const paid = Number(student.fees_paid);
     const due = total - paid;
-    const date = new Date().toLocaleDateString();
+    const date = new Date().toLocaleDateString('en-IN');
 
-    return `🧾 *FEE STATEMENT*
+    return `🧾 *फीस विवरण (Fee Statement)*
 --------------------------------
 *${instituteName}*
-Date: ${date}
+दिनांक: ${date}
 
-Student: *${student.name}*
-Roll No: ${student.roll || 'N/A'}
+छात्र का नाम: *${student.name}*
+रोल नं: ${student.roll || 'N/A'}
 
-💰 *Course Fee:* ₹${total.toLocaleString()}
-✅ *Paid Amount:* ₹${paid.toLocaleString()}
+💰 *कुल कोर्स फीस:* ₹${total.toLocaleString()}
+✅ *जमा राशि:* ₹${paid.toLocaleString()}
 --------------------------------
-🚨 *PENDING DUE: ₹${due.toLocaleString()}*
+🚨 *बकाया राशि (Due): ₹${due.toLocaleString()}*
 --------------------------------
 
-Please clear the due amount at the earliest.
-Thank you!`;
+कृपया जल्द से जल्द बकाया राशि जमा करें।
+धन्यवाद!`;
 };
 
-// --- Reusable Components ---
+// --- Reusable Components (Updated for Hindi) ---
 
 const InvoiceTemplate = ({ student, user }: { student: Student, user: User }) => {
     return (
@@ -51,21 +51,21 @@ const InvoiceTemplate = ({ student, user }: { student: Student, user: User }) =>
              <div className="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-6">
                 <div>
                     <h1 className="text-3xl font-bold uppercase tracking-wide">{user.institute_name}</h1>
-                    <p className="text-slate-500 mt-1 font-medium">Fee Statement</p>
+                    <p className="text-slate-500 mt-1 font-medium">फीस रसीद (Fee Statement)</p>
                 </div>
                 <div className="text-right">
-                    <div className="font-mono text-sm text-slate-500">Date: {new Date().toLocaleDateString()}</div>
-                    <div className="font-mono text-sm text-slate-500 mt-1">Receipt #: {Math.floor(Math.random() * 100000)}</div>
+                    <div className="font-mono text-sm text-slate-500">दिनांक: {new Date().toLocaleDateString('en-IN')}</div>
+                    <div className="font-mono text-sm text-slate-500 mt-1">रसीद नं: {Math.floor(Math.random() * 100000)}</div>
                 </div>
             </div>
 
             {/* Student Info */}
             <div className="mb-8 p-6 bg-slate-50 rounded-lg border border-slate-100 print:bg-transparent print:border-slate-300">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Bill To</h3>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">छात्र विवरण (Student Details)</h3>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <div className="text-2xl font-bold text-slate-800">{student.name}</div>
-                        <div className="text-slate-600 font-medium mt-1">Roll No: {student.roll || 'N/A'}</div>
+                        <div className="text-slate-600 font-medium mt-1">रोल नं: {student.roll || 'N/A'}</div>
                     </div>
                     <div className="text-right">
                         <div className="text-slate-600">{student.phone}</div>
@@ -78,23 +78,23 @@ const InvoiceTemplate = ({ student, user }: { student: Student, user: User }) =>
             <table className="w-full mb-8 border-collapse">
                 <thead className="bg-slate-100 border-y border-slate-200 print:bg-slate-100">
                     <tr>
-                        <th className="py-3 px-4 text-left font-bold text-slate-700">Description</th>
-                        <th className="py-3 px-4 text-right font-bold text-slate-700">Amount</th>
+                        <th className="py-3 px-4 text-left font-bold text-slate-700">विवरण (Description)</th>
+                        <th className="py-3 px-4 text-right font-bold text-slate-700">राशि (Amount)</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td className="py-4 px-4 border-b border-slate-100">Total Course Fee</td>
+                        <td className="py-4 px-4 border-b border-slate-100">कुल कोर्स फीस (Total Course Fee)</td>
                         <td className="py-4 px-4 text-right border-b border-slate-100 font-medium">₹{Number(student.total_fees).toLocaleString()}</td>
                     </tr>
                     <tr>
-                        <td className="py-4 px-4 border-b border-slate-100 font-medium text-green-700">Less: Amount Paid</td>
+                        <td className="py-4 px-4 border-b border-slate-100 font-medium text-green-700">जमा की गई राशि (Amount Paid)</td>
                         <td className="py-4 px-4 text-right border-b border-slate-100 text-green-700 font-medium">- ₹{Number(student.fees_paid).toLocaleString()}</td>
                     </tr>
                 </tbody>
                 <tfoot>
-                    <tr className="bg-slate-50 print:bg-transparent">
-                        <td className="py-4 px-4 font-bold text-xl text-slate-900 border-t border-slate-200">Total Due Amount</td>
+                    <tr className="bg-slate-5 print:bg-transparent">
+                        <td className="py-4 px-4 font-bold text-xl text-slate-900 border-t border-slate-200">कुल बकाया राशि (Total Due)</td>
                         <td className="py-4 px-4 text-right font-bold text-xl text-red-600 border-t border-slate-200">₹{(Number(student.total_fees) - Number(student.fees_paid)).toLocaleString()}</td>
                     </tr>
                 </tfoot>
@@ -102,8 +102,8 @@ const InvoiceTemplate = ({ student, user }: { student: Student, user: User }) =>
 
             {/* Footer */}
             <div className="mt-auto pt-8 border-t border-slate-100 text-center">
-                <p className="text-sm text-slate-500">Thank you for being a part of <span className="font-semibold">{user.institute_name}</span>.</p>
-                <p className="text-xs text-slate-400 mt-2">This is a computer-generated invoice and does not require a signature.</p>
+                <p className="text-sm text-slate-500"><span className="font-semibold">{user.institute_name}</span> का हिस्सा बनने के लिए धन्यवाद।</p>
+                <p className="text-xs text-slate-400 mt-2">यह कंप्यूटर जनित रसीद है, हस्ताक्षर की आवश्यकता नहीं है।</p>
             </div>
         </div>
     );
