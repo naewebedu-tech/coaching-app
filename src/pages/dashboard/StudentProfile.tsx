@@ -636,7 +636,7 @@ function TestsTab({ student, data }: { student: any; data: DashboardData }) {
 
   const avgPct    = studentMarks.length > 0 ? Math.round(studentMarks.reduce((s: number, m: any) => s + m.pct, 0) / studentMarks.length) : 0;
   const highest   = studentMarks.length > 0 ? Math.max(...studentMarks.map((m: any) => m.pct)) : 0;
-  const lowest    = studentMarks.length > 0 ? Math.min(...studentMarks.map((m: any) => m.pct)) : 0;
+  // const lowest    = studentMarks.length > 0 ? Math.min(...studentMarks.map((m: any) => m.pct)) : 0;
   const passCount = studentMarks.filter((m: any) => m.pct >= 33).length;
 
   const gradeLabel = (p: number) => p >= 90 ? 'A+' : p >= 80 ? 'A' : p >= 70 ? 'B' : p >= 60 ? 'C' : p >= 50 ? 'D' : p >= 33 ? 'E' : 'F';
@@ -702,7 +702,7 @@ function TestsTab({ student, data }: { student: any; data: DashboardData }) {
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
           <SectionHeader title="Score Trend" />
           <div className="flex items-end gap-2 h-28">
-            {[...studentMarks].reverse().slice(-10).map((m: any, i: number, arr: any[]) => (
+            {[...studentMarks].reverse().slice(-10).map((m: any, i: number) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
                 <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs bg-slate-800 text-white px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                   {m.pct}%

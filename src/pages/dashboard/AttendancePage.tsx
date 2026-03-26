@@ -51,25 +51,25 @@ const firstDayOfMonth = (y: number, m: number) => new Date(y, m, 1).getDay();
 // Small reusable pieces
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StatusPill({ status }: { status: AttendanceStatus | undefined }) {
-  if (status === 'present')
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
-        <CheckCircle size={10} /> P
-      </span>
-    );
-  if (status === 'leave')
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 border border-yellow-200">
-        <Coffee size={10} /> L
-      </span>
-    );
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
-      <XCircle size={10} /> A
-    </span>
-  );
-}
+// function StatusPill({ status }: { status: AttendanceStatus | undefined }) {
+//   if (status === 'present')
+//     return (
+//       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+//         <CheckCircle size={10} /> P
+//       </span>
+//     );
+//   if (status === 'leave')
+//     return (
+//       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 border border-yellow-200">
+//         <Coffee size={10} /> L
+//       </span>
+//     );
+//   return (
+//     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+//       <XCircle size={10} /> A
+//     </span>
+//   );
+// }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab 1 — Mark Attendance
