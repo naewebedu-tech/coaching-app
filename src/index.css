@@ -1,8 +1,117 @@
+/* index.css — CoachingApp PWA global styles */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Optional: Base styles for full height */
-html, body, #root {
+/* ─── PWA / Safe Area ──────────────────────────────────────────────── */
+:root {
+  --safe-area-inset-top:    env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left:   env(safe-area-inset-left, 0px);
+  --safe-area-inset-right:  env(safe-area-inset-right, 0px);
+}
+
+/* Prevent text resizing on orientation change (iOS) */
+html {
+  -webkit-text-size-adjust: 100%;
+  /* Use dynamic viewport height — critical for mobile PWA */
+  height: 100dvh;
+}
+
+body {
   height: 100%;
+  overscroll-behavior-y: none; /* Prevent pull-to-refresh interfering */
+  -webkit-tap-highlight-color: transparent; /* Remove tap flash on iOS */
+  /* Improve font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────── */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+.scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ─── Touch targets ─────────────────────────────────────────────────── */
+/* Ensure all interactive elements meet 44×44px minimum on mobile */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* ─── Bottom Nav safe area padding ─────────────────────────────────── */
+.bottom-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ─── Animations ────────────────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.fade-in { animation-name: fade-in; }
+
+@keyframes slide-in-from-bottom-4 {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.slide-in-from-bottom-4 { animation-name: slide-in-from-bottom-4; }
+
+@keyframes zoom-in-95 {
+  from { transform: scale(0.95); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+.zoom-in-95 { animation-name: zoom-in-95; }
+
+.duration-300 { animation-duration: 300ms; }
+.duration-500 { animation-duration: 500ms; }
+
+/* ─── Print styles ──────────────────────────────────────────────────── */
+@media print {
+  .print\:hidden { display: none !important; }
+}
+
+/* ─── PWA standalone mode tweaks ───────────────────────────────────── */
+@media (display-mode: standalone) {
+  /* Status bar safe area in standalone */
+  .dashboard-header {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* ─── Responsive button sizes ───────────────────────────────────────── */
+/* Minimum 44px touch target on mobile, normal on desktop */
+button, [role="button"] {
+  touch-action: manipulation;
+}
+
+@media (max-width: 640px) {
+  button:not(.text-xs):not(.text-sm) {
+    min-height: 40px;
+  }
+}
+
+/* ─── Loading skeleton ──────────────────────────────────────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.skeleton {
+  background: #e2e8f0;
+  border-radius: 4px;
+  animation: pulse 1.5s ease-in-out infinite;
 }

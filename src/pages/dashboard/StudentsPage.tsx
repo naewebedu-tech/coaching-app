@@ -1,5 +1,5 @@
 // pages/students/StudentsPage.tsx
-// Unchanged logic — only adds the "View Profile" click handler and StudentProfile integration
+// Fixed hook order: moved early return for StudentProfile below all hooks
 
 import { useState, type FormEvent, type ChangeEvent, useRef } from 'react';
 import {
@@ -25,7 +25,7 @@ const StudentsPage = ({ data }: StudentsPageProps) => {
   const [selectedBatch, setSelectedBatch] = useState('all');
   const [isModalOpen,   setIsModalOpen]   = useState(false);
   const [uploadMode,    setUploadMode]    = useState<'single' | 'bulk'>('single');
-  const [profileId,     setProfileId]     = useState<string | null>(null); // ← NEW
+  const [profileId,     setProfileId]     = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -34,17 +34,6 @@ const StudentsPage = ({ data }: StudentsPageProps) => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
-
-  // ── If a profile is open, render StudentProfile instead ───────────────────
-  if (profileId) {
-    return (
-      <StudentProfile
-        studentId={profileId}
-        data={data}
-        onBack={() => setProfileId(null)}
-      />
-    );
-  }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   const handleCloseModal = () => {
@@ -154,6 +143,19 @@ const StudentsPage = ({ data }: StudentsPageProps) => {
     return matchSearch && matchBatch;
   });
 
+  // ── EARLY RETURN MUST GO HERE, AFTER ALL HOOKS ─────────────────────────────
+  // If a profile is open, render StudentProfile instead
+  if (profileId) {
+    return (
+      <StudentProfile
+        studentId={profileId}
+        data={data}
+        onBack={() => setProfileId(null)}
+      />
+    );
+  }
+
+  // ── Main Render ────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
